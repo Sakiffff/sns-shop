@@ -28,7 +28,7 @@ function SupplierCard({ supplier }) {
       {/* Image */}
       <div className="relative overflow-hidden h-48 bg-gray-50">
         {supplier.imageUrl
-          ? <img src={supplier.imageUrl} alt={supplier.companyName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          ? <img src={supplier.imageUrl} alt={supplier.companyName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={e => { e.target.style.display='none'; e.target.nextSibling && (e.target.nextSibling.style.display='flex') }} />
           : <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-gray-50 to-gray-100">🏭</div>
         }
         {/* Badge overlay */}

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { LogOut, MessageCircle, ShieldCheck, Store, ShoppingBag } from 'lucide-react'
 import CartSidebar from './CartSidebar'
+import Logo from './Logo'
 import { useEffect, useState } from 'react'
 
 // Country flag emoji from country code
@@ -40,7 +41,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className="shrink-0">
-            <img src="/logo.png" alt="S&S Shop" className="h-9 w-auto" />
+            <Logo className="h-9 w-auto" />
           </Link>
 
           {/* Deliver to */}
