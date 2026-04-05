@@ -16,11 +16,8 @@ export function AuthProvider({ children }) {
     await updateProfile(result.user, { displayName })
     const isAdmin = email === import.meta.env.VITE_ADMIN_EMAIL
     const profileData = {
-      uid: result.user.uid,
-      email,
-      displayName,
-      isAdmin,
-      isSupplier: false,
+      uid: result.user.uid, email, displayName,
+      isAdmin, isSupplier: false,
       createdAt: new Date().toISOString()
     }
     await setDoc(doc(db, 'users', result.user.uid), profileData)
@@ -37,11 +34,10 @@ export function AuthProvider({ children }) {
   }
 
   async function fetchUserProfile(uid) {
-    const snap = await getDoc(doc(db, 'users', uid))
-    if (snap.exists()) {
-      setUserProfile(snap.data())
-      return snap.data()
-    }
+    try {
+      const snap = await getDoc(doc(db, 'users', uid))
+      if (snap.exists()) { setUserProfile(snap.data()); return snap.data() }
+    } catch (e) { console.error('fetchUserProfile', e) }
     return null
   }
 
@@ -61,6 +57,9 @@ export function AuthProvider({ children }) {
   const isAdmin = userProfile?.isAdmin || user?.email === import.meta.env.VITE_ADMIN_EMAIL
   const isSupplier = userProfile?.isSupplier || false
 
-  const value = { user, userProfile, loading, isAdmin, isSupplier, signup, login, logout, fetchUserProfile, refreshProfile }
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, userProfile, loading, isAdmin, isSupplier, signup, login, logout, fetchUserProfile, refreshProfile }}>
+      {!loading && children}
+    </AuthContext.Provider>
+  )
 }

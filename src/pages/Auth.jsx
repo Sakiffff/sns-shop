@@ -20,11 +20,8 @@ export default function Auth() {
     setError('')
     setLoading(true)
     try {
-      if (isSignup) {
-        await signup(email, password, displayName)
-      } else {
-        await login(email, password)
-      }
+      if (isSignup) await signup(email, password, displayName)
+      else await login(email, password)
       navigate('/')
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/\(auth.*\)/, '').trim())
@@ -33,27 +30,26 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-sand-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <Link to="/" className="inline-flex items-center gap-2 text-sand-500 hover:text-forest-700 text-sm mb-8 transition-colors">
-          <ArrowLeft size={16} /> Back to home
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-brand-600 text-sm mb-8 transition-colors">
+          <ArrowLeft size={15} /> Back to home
         </Link>
 
         <div className="card p-8">
+          {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-forest-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-sand-50 font-display font-bold text-xl">S</span>
-            </div>
-            <h1 className="font-display text-2xl font-bold text-forest-950">
-              {isSignup ? 'Create your account' : 'Welcome back'}
+            <img src="/logo.png" alt="S&S Shop" className="h-12 w-auto mx-auto mb-4" />
+            <h1 className="font-display text-3xl font-black text-gray-900 uppercase tracking-wide">
+              {isSignup ? 'Create Account' : 'Welcome Back'}
             </h1>
-            <p className="text-sand-500 text-sm mt-1">
+            <p className="text-gray-400 text-sm mt-1 font-body">
               {isSignup ? 'Join S&S Shop for free' : 'Sign in to continue'}
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4 font-body">
               {error}
             </div>
           )}
@@ -62,61 +58,30 @@ export default function Auth() {
             {isSignup && (
               <div>
                 <label className="label">Full Name</label>
-                <input
-                  className="input"
-                  value={displayName}
-                  onChange={e => setDisplayName(e.target.value)}
-                  required
-                  placeholder="Your name"
-                />
+                <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} required placeholder="Your name" />
               </div>
             )}
-
             <div>
               <label className="label">Email</label>
-              <input
-                className="input"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                placeholder="you@example.com"
-              />
+              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" />
             </div>
-
             <div>
               <label className="label">Password</label>
               <div className="relative">
-                <input
-                  className="input pr-10"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  placeholder="Min. 6 characters"
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sand-400 hover:text-sand-600"
-                >
+                <input className="input pr-10" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min. 6 characters" minLength={6} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
-
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 text-base">
+            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 text-base font-bold">
               {loading ? 'Please wait...' : isSignup ? 'Create Account' : 'Sign In'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-sand-500 mt-6">
+          <p className="text-center text-sm text-gray-400 mt-6 font-body">
             {isSignup ? 'Already have an account? ' : "Don't have an account? "}
-            <button
-              onClick={() => { setIsSignup(!isSignup); setError('') }}
-              className="text-forest-600 font-medium hover:underline"
-            >
+            <button onClick={() => { setIsSignup(!isSignup); setError('') }} className="text-brand-600 font-semibold hover:underline">
               {isSignup ? 'Sign in' : 'Sign up free'}
             </button>
           </p>

@@ -1,83 +1,115 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, MessageCircle, ShieldCheck, Store } from 'lucide-react'
+import { useCart } from '../contexts/CartContext'
+import { LogOut, MessageCircle, ShieldCheck, Store, ShoppingBag } from 'lucide-react'
+import CartSidebar from './CartSidebar'
+import { useEffect, useState } from 'react'
+
+// Country flag emoji from country code
+function getFlagEmoji(countryCode) {
+  if (!countryCode) return '🌍'
+  return countryCode.toUpperCase().replace(/./g, c =>
+    String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0))
+  )
+}
 
 export default function Navbar() {
   const { user, userProfile, logout, isAdmin, isSupplier } = useAuth()
+  const { items, setIsOpen } = useCart()
   const navigate = useNavigate()
+  const [country, setCountry] = useState({ name: 'Worldwide', code: '' })
 
-  async function handleLogout() {
-    await logout()
-    navigate('/')
-  }
+  useEffect(() => {
+    // Auto-detect country via free API
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(d => { if (d.country_name) setCountry({ name: d.country_name, code: d.country_code }) })
+      .catch(() => {})
+  }, [])
+
+  async function handleLogout() { await logout(); navigate('/') }
 
   return (
     <>
       <div className="disclaimer-bar">
-        ⚠️ Payments & logistics are handled directly between buyers and suppliers. We are working on integrated solutions.
+        ⚠️ Payments & logistics are handled directly between buyers and suppliers.
       </div>
-      <nav className="bg-white border-b border-sand-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-forest-600 rounded-lg flex items-center justify-center">
-              <span className="text-sand-50 font-display font-bold text-sm">S</span>
-            </div>
-            <span className="font-display font-semibold text-forest-900 text-lg">S&S Shop</span>
+          <Link to="/" className="shrink-0">
+            <img src="/logo.png" alt="S&S Shop" className="h-9 w-auto" />
           </Link>
 
-          {/* Right side */}
-          <div className="flex items-center gap-2">
+          {/* Deliver to */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-sm">
+            <span className="text-lg leading-none">{getFlagEmoji(country.code)}</span>
+            <div>
+              <div className="text-xs text-gray-400 leading-none">Deliver to</div>
+              <div className="font-semibold text-gray-800 text-xs leading-tight">{country.name}</div>
+            </div>
+          </div>
+
+          {/* Right */}
+          <div className="flex items-center gap-1 ml-auto">
             {user ? (
               <>
+                {/* Cart */}
+                <button onClick={() => setIsOpen(true)} className="relative btn-ghost px-3">
+                  <ShoppingBag size={18} />
+                  {items.length > 0 && (
+                    <span className="cart-badge">{items.length}</span>
+                  )}
+                  <span className="hidden sm:inline">Cart</span>
+                </button>
+
                 {/* Chats */}
                 <Link to="/chats" className="btn-ghost">
-                  <MessageCircle size={16} />
+                  <MessageCircle size={18} />
                   <span className="hidden sm:inline">Chats</span>
                 </Link>
 
-                {/* Become a Supplier — only if not already a supplier and not admin */}
+                {/* Supplier */}
                 {!isSupplier && !isAdmin && (
-                  <Link to="/become-supplier" className="btn-secondary hidden sm:inline-flex">
-                    <Store size={16} />
-                    Become a Supplier
+                  <Link to="/become-supplier" className="hidden sm:inline-flex btn-secondary text-xs px-3 py-2">
+                    <Store size={15} /> Become a Supplier
                   </Link>
                 )}
-
-                {/* Manage my supplier profile */}
                 {isSupplier && !isAdmin && (
-                  <Link to="/become-supplier" className="btn-ghost">
-                    <Store size={16} />
+                  <Link to="/become-supplier" className="btn-ghost text-xs">
+                    <Store size={15} />
                     <span className="hidden sm:inline">My Shop</span>
                   </Link>
                 )}
 
-                {/* Admin panel — only for admin */}
+                {/* Admin */}
                 {isAdmin && (
-                  <Link to="/admin-sns-panel" className="btn-ghost text-forest-600">
-                    <ShieldCheck size={16} />
+                  <Link to="/admin-sns-panel" className="btn-ghost text-brand-600">
+                    <ShieldCheck size={18} />
                     <span className="hidden sm:inline">Admin</span>
                   </Link>
                 )}
 
-                {/* User greeting */}
-                <span className="hidden md:inline text-sm text-sand-500">
-                  Hi, {userProfile?.displayName?.split(' ')[0] || 'there'}
+                <span className="hidden lg:inline text-xs text-gray-400 px-2 border-l border-gray-200 ml-1">
+                  {userProfile?.displayName?.split(' ')[0]}
                 </span>
-
-                <button onClick={handleLogout} className="btn-ghost text-sand-500">
+                <button onClick={handleLogout} className="btn-ghost text-gray-400 px-2">
                   <LogOut size={16} />
                 </button>
               </>
             ) : (
               <>
-                <Link to="/auth" className="btn-ghost">Login</Link>
-                <Link to="/auth?mode=signup" className="btn-primary">Get Started</Link>
+                <Link to="/auth" className="btn-ghost text-sm">Login</Link>
+                <Link to="/auth?mode=signup" className="btn-primary text-sm">Get Started</Link>
               </>
             )}
           </div>
         </div>
       </nav>
+
+      <CartSidebar />
     </>
   )
 }
