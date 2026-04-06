@@ -1,10 +1,11 @@
 import { createContext, useContext, useState } from 'react'
+import { convertFromBDTRaw, getCurrencyForCountry } from '../utils/currency'
 
 const CartContext = createContext({})
 export function useCart() { return useContext(CartContext) }
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([]) // { post, qty }
+  const [items, setItems] = useState([])
   const [isOpen, setIsOpen] = useState(false)
 
   function addToCart(post) {
@@ -28,14 +29,19 @@ export function CartProvider({ children }) {
   function clearCart() { setItems([]) }
 
   const totalItems = items.reduce((sum, i) => sum + i.qty, 0)
-  const totalCost = items.reduce((sum, i) => {
-    const price = parseFloat(i.post.price) || 0
-    const moq = parseInt(i.post.moq) || 1
-    return sum + (price * i.qty * moq)
-  }, 0)
+
+  function getTotalInCountry(country) {
+    const curr = getCurrencyForCountry(country)
+    const total = items.reduce((sum, i) => {
+      const bdtPrice = parseFloat(i.post.price) || 0
+      const moq = parseInt(i.post.moq) || 1
+      return sum + convertFromBDTRaw(bdtPrice * i.qty * moq, country)
+    }, 0)
+    return { total, symbol: curr.symbol, code: curr.code }
+  }
 
   return (
-    <CartContext.Provider value={{ items, isOpen, setIsOpen, addToCart, removeFromCart, updateQty, clearCart, totalItems, totalCost }}>
+    <CartContext.Provider value={{ items, isOpen, setIsOpen, addToCart, removeFromCart, updateQty, clearCart, totalItems, getTotalInCountry }}>
       {children}
     </CartContext.Provider>
   )

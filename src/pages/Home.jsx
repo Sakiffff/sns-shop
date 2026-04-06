@@ -1,66 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { Search, MapPin, MessageCircle, Sparkles, ShieldCheck, Star, ShoppingBag, ArrowRight, Package, DollarSign, User } from 'lucide-react'
+import { Search, MapPin, MessageCircle, ShieldCheck, Star, ShoppingBag, ArrowRight, Package, Sparkles } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
+import { useCountry } from '../contexts/CountryContext'
+import { convertFromBDT } from '../utils/currency'
 
 const CATEGORIES = ['All','T-Shirts','Denim','Hoodies','Polo Shirts','Activewear','Outerwear','Dresses','Knitwear','Accessories','Socks','Underwear','Swimwear','Uniforms','Other']
 
-function BadgePill({ tier }) {
-  if (!tier || tier === 'none') return null
-  if (tier === 'golden') return <span className="badge-golden"><Sparkles size={9}/>Golden</span>
-  if (tier === 'verified') return <span className="badge-verified"><ShieldCheck size={9}/>Verified</span>
-  if (tier === 'regular') return <span className="badge-regular"><Star size={9}/>Regular</span>
-  return null
-}
-
-// Seller info hover/tap card
-function SellerTag({ post, supplier }) {
-  const [show, setShow] = useState(false)
-  const ref = useRef()
-
-  useEffect(() => {
-    function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) setShow(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
+function StarRating({ rating, count }) {
+  if (!rating) return null
+  const stars = Math.round(rating)
   return (
-    <div className="relative" ref={ref}>
-      <button
-        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-brand-600 transition-colors"
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        onClick={() => setShow(!show)}
-      >
-        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-          <User size={10} className="text-gray-400" />
-        </div>
-        <span className="font-body truncate max-w-[100px]">{post.supplierName || 'Supplier'}</span>
-      </button>
-
-      {show && supplier && (
-        <div className="absolute bottom-full left-0 mb-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-20">
-          <div className="flex items-center gap-2 mb-2">
-            <BadgePill tier={supplier.badgeTier} />
-          </div>
-          <div className="font-display font-black text-gray-900 uppercase text-sm leading-tight">{supplier.companyName}</div>
-          {supplier.location && (
-            <div className="flex items-center gap-1 text-xs text-gray-400 mt-1 font-body">
-              <MapPin size={10} /> {supplier.location}, BD
-            </div>
-          )}
-          <Link to={`/supplier/${post.supplierId}`}
-            className="mt-2 w-full flex items-center justify-center gap-1 text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors rounded-lg py-1.5">
-            View Profile <ArrowRight size={10} />
-          </Link>
-        </div>
-      )}
+    <div className="flex items-center gap-1">
+      {[1,2,3,4,5].map(s => (
+        <Star key={s} size={10} className={s <= stars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'} />
+      ))}
+      {count > 0 && <span className="text-xs text-gray-400 font-body ml-0.5">({count})</span>}
     </div>
   )
 }
@@ -68,36 +27,43 @@ function SellerTag({ post, supplier }) {
 function PostCard({ post, supplier }) {
   const { addToCart, items } = useCart()
   const { user } = useAuth()
+  const { country } = useCountry()
   const inCart = items.some(i => i.post.id === post.id)
-  const isGolden = supplier?.badgeTier === 'golden'
+  const isVerified = supplier?.isVerifiedSeller
+
+  const localPrice = convertFromBDT(parseFloat(post.price) || 0, country)
 
   return (
-    <div className={`card-hover overflow-hidden flex flex-col group ${isGolden ? 'ring-golden' : ''}`}>
+    <div className={`card-hover overflow-hidden flex flex-col group ${isVerified ? 'ring-2 ring-emerald-400 ring-offset-1' : ''}`}>
       {/* Image */}
       <div className="relative overflow-hidden h-48 bg-gray-50">
-        {post.imageUrl
-          ? <img src={post.imageUrl} alt={post.title}
+        {post.imageUrl ? (
+          <>
+            <img src={post.imageUrl} alt={post.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={e => { e.target.style.display='none'; e.target.parentNode.querySelector('.fallback-icon').style.display='flex' }} />
-          : null
-        }
-        <div className="fallback-icon w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-gray-50 to-gray-100"
-          style={{ display: post.imageUrl ? 'none' : 'flex' }}>
-          📦
-        </div>
-
-        {/* Badge */}
-        {supplier?.badgeTier && supplier.badgeTier !== 'none' && (
-          <div className="absolute top-2 left-2"><BadgePill tier={supplier.badgeTier} /></div>
+              onError={e => { e.target.style.display='none'; e.target.nextElementSibling.style.display='flex' }} />
+            <div className="w-full h-full items-center justify-center text-5xl bg-gray-100 hidden absolute inset-0">📦</div>
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-gray-50 to-gray-100">📦</div>
         )}
 
-        {/* Add to cart button */}
+        {/* Verified badge */}
+        {isVerified && (
+          <div className="absolute top-2 left-2">
+            <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
+              <ShieldCheck size={9} /> Verified
+            </span>
+          </div>
+        )}
+
+        {/* Add to cart */}
         <button
           onClick={() => addToCart(post)}
           className={`absolute bottom-2 right-2 text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg transition-all
             ${inCart ? 'bg-green-500 text-white' : 'bg-white text-brand-600 hover:bg-brand-600 hover:text-white'}`}
         >
-          {inCart ? '✓ In Cart' : '+ Add to Cart'}
+          {inCart ? '✓ In Cart' : '+ Add'}
         </button>
       </div>
 
@@ -106,20 +72,22 @@ function PostCard({ post, supplier }) {
         {post.category && (
           <span className="text-xs text-gray-400 font-body font-semibold uppercase tracking-wider mb-1">{post.category}</span>
         )}
-
-        <h3 className="font-display font-black text-gray-900 text-base leading-tight uppercase tracking-wide mb-2 line-clamp-2">
+        <h3 className="font-display font-black text-gray-900 text-base leading-tight uppercase tracking-wide mb-1 line-clamp-2">
           {post.title}
         </h3>
 
-        {/* Price */}
-        <div className="flex items-baseline gap-1 mb-2">
-          <span className="font-display font-black text-brand-600 text-xl">
-            {post.currency || '$'}{parseFloat(post.price || 0).toFixed(2)}
-          </span>
-          <span className="text-xs text-gray-400 font-body">/pc</span>
+        {/* Rating */}
+        <div className="mb-2">
+          <StarRating rating={post.avgRating} count={post.ratingCount || 0} />
         </div>
 
-        {/* MOQ */}
+        {/* Price in local currency */}
+        <div className="flex items-baseline gap-1 mb-1">
+          <span className="font-display font-black text-brand-600 text-xl">{localPrice}</span>
+          <span className="text-xs text-gray-400 font-body">/pc</span>
+        </div>
+        <div className="text-xs text-gray-300 font-body mb-2">৳{parseFloat(post.price || 0).toLocaleString()} BDT</div>
+
         {post.moq && (
           <div className="flex items-center gap-1.5 mb-3">
             <Package size={11} className="text-gray-300" />
@@ -131,16 +99,34 @@ function PostCard({ post, supplier }) {
           <p className="text-gray-400 text-xs mb-3 line-clamp-2 flex-1 leading-relaxed font-body">{post.description}</p>
         )}
 
-        {/* Seller tag */}
+        {/* Supplier link + chat */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
-          <SellerTag post={post} supplier={supplier} />
-          {user ? (
-            <Link to={`/chat/${post.supplierId}`} className="text-xs text-brand-600 font-bold hover:text-brand-800 flex items-center gap-1 font-body">
-              <MessageCircle size={12} /> Chat
+          {/* Supplier name — clickable, goes directly to profile */}
+          <Link
+            to={`/supplier/${post.supplierId}`}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 transition-colors max-w-[55%]"
+          >
+            <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+              {isVerified
+                ? <ShieldCheck size={10} className="text-emerald-500" />
+                : <span className="text-xs">🏭</span>
+              }
+            </div>
+            <span className="font-body font-semibold truncate">{post.supplierName || 'Supplier'}</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <Link to={`/post/${post.id}`} className="text-xs text-gray-400 hover:text-brand-600 font-body">
+              Reviews
             </Link>
-          ) : (
-            <Link to="/auth" className="text-xs text-brand-600 font-bold font-body">Chat</Link>
-          )}
+            {user ? (
+              <Link to={`/chat/${post.supplierId}`} className="text-xs text-brand-600 font-bold hover:text-brand-800 flex items-center gap-1 font-body">
+                <MessageCircle size={12} /> Chat
+              </Link>
+            ) : (
+              <Link to="/auth" className="text-xs text-brand-600 font-bold font-body">Chat</Link>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -149,12 +135,15 @@ function PostCard({ post, supplier }) {
 
 export default function Home() {
   const [posts, setPosts] = useState([])
-  const [suppliers, setSuppliers] = useState({}) // map supplierId -> supplier
+  const [suppliers, setSuppliers] = useState({})
   const [filtered, setFiltered] = useState([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
+  const { country } = useCountry()
+  const heroRef = useRef()
 
   useEffect(() => {
     async function fetchData() {
@@ -171,12 +160,9 @@ export default function Home() {
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(p => p.title)
           .sort((a, b) => {
-            // Golden suppliers' posts go first
-            const aT = supplierMap[a.supplierId]?.badgeTier
-            const bT = supplierMap[b.supplierId]?.badgeTier
-            const order = { golden: 0, verified: 1, regular: 2 }
-            const diff = (order[aT] ?? 3) - (order[bT] ?? 3)
-            if (diff !== 0) return diff
+            const aV = supplierMap[a.supplierId]?.isVerifiedSeller ? 0 : 1
+            const bV = supplierMap[b.supplierId]?.isVerifiedSeller ? 0 : 1
+            if (aV !== bV) return aV - bV
             return new Date(b.createdAt) - new Date(a.createdAt)
           })
         setPosts(postsData)
@@ -189,6 +175,7 @@ export default function Home() {
 
   useEffect(() => {
     let result = posts
+    if (verifiedOnly) result = result.filter(p => suppliers[p.supplierId]?.isVerifiedSeller)
     if (search) result = result.filter(p =>
       p.title?.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase()) ||
@@ -198,14 +185,14 @@ export default function Home() {
     )
     if (category !== 'All') result = result.filter(p => p.category === category)
     setFiltered(result)
-  }, [search, category, posts])
+  }, [search, category, posts, verifiedOnly, suppliers])
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navbar searchValue={search} onSearchChange={setSearch} />
 
       {/* Hero */}
-      <div className="hero-pattern">
+      <div className="hero-pattern" ref={heroRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
           <div className="max-w-3xl">
             <div className="inline-block text-xs font-mono font-bold text-red-200 bg-white/10 border border-white/20 px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
@@ -216,8 +203,10 @@ export default function Home() {
               <span className="text-red-200">DIRECTLY.</span>
             </h1>
             <p className="text-red-100 text-lg mb-8 font-body max-w-xl">
-              Browse thousands of products from verified Bangladeshi suppliers. Real prices. No middlemen.
+              Browse products from verified Bangladeshi suppliers. Real prices. No middlemen.
             </p>
+
+            {/* Hero search */}
             <div className="flex gap-3 max-w-2xl">
               <div className="relative flex-1">
                 <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -251,9 +240,23 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Category bar */}
+      {/* Filter bar */}
       <div className="bg-white border-b border-gray-100 sticky top-[106px] z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto scrollbar-hide items-center">
+          {/* Verified filter */}
+          <button
+            onClick={() => setVerifiedOnly(!verifiedOnly)}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border shrink-0 ${
+              verifiedOnly
+                ? 'bg-emerald-500 text-white border-emerald-500'
+                : 'bg-white text-emerald-600 border-emerald-200 hover:border-emerald-400'
+            }`}
+          >
+            <ShieldCheck size={13} /> Verified Sellers
+          </button>
+
+          <div className="w-px h-5 bg-gray-200 shrink-0" />
+
           {CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setCategory(cat)}
               className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border font-body ${
@@ -267,12 +270,17 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Product grid */}
+      {/* Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <p className="text-gray-400 text-sm font-body">
-            {loading ? 'Loading products...' : `${filtered.length} product${filtered.length !== 1 ? 's' : ''} found`}
+            {loading ? 'Loading...' : `${filtered.length} product${filtered.length !== 1 ? 's' : ''} found`}
           </p>
+          {verifiedOnly && (
+            <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              ✓ Showing verified sellers only
+            </span>
+          )}
         </div>
 
         {loading ? (
