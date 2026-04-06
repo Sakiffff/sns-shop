@@ -1,120 +1,121 @@
 import { useCart } from '../contexts/CartContext'
-import { X, ShoppingBag, Trash2, Plus, Minus, MessageCircle } from 'lucide-react'
+import { X, ShoppingBag, Trash2, Plus, Minus, MessageCircle, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function CartSidebar() {
-  const { items, isOpen, setIsOpen, removeFromCart, updateNote, updateQty, clearCart } = useCart()
+  const { items, isOpen, setIsOpen, removeFromCart, updateQty, clearCart, totalCost } = useCart()
   const { user } = useAuth()
 
   if (!isOpen) return null
 
   return (
     <>
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setIsOpen(false)} />
-
-      {/* Drawer */}
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsOpen(false)} />
       <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-2">
             <ShoppingBag size={20} className="text-brand-600" />
-            <span className="font-display text-xl font-bold text-gray-900 uppercase tracking-wide">
-              Inquiry Cart
-            </span>
-            <span className="bg-brand-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-              {items.length}
-            </span>
+            <span className="font-display text-xl font-black text-gray-900 uppercase tracking-wide">Order Cart</span>
+            {items.length > 0 && (
+              <span className="bg-brand-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{items.length}</span>
+            )}
           </div>
-          <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+          <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         {items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-            <ShoppingBag size={48} className="text-gray-200 mb-4" />
-            <p className="text-gray-500 font-semibold mb-1">Your cart is empty</p>
-            <p className="text-gray-400 text-sm">Add suppliers to send bulk inquiries</p>
+            <ShoppingBag size={52} className="text-gray-100 mb-4" />
+            <p className="font-display text-xl font-black text-gray-700 uppercase mb-1">Cart is empty</p>
+            <p className="text-gray-400 text-sm font-body">Browse products and add items to order</p>
           </div>
         ) : (
           <>
-            {/* Info banner */}
-            <div className="mx-4 mt-4 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 text-xs text-brand-700">
-              💡 This is an <strong>inquiry cart</strong> — you're collecting suppliers to contact, not placing a direct order.
+            {/* Disclaimer */}
+            <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex gap-2 items-start">
+              <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 font-body">
+                Prices shown are per unit × MOQ. Final pricing confirmed directly with supplier.
+              </p>
             </div>
 
             {/* Items */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-              {items.map(item => (
-                <div key={item.supplier.id} className="card p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      {item.supplier.imageUrl
-                        ? <img src={item.supplier.imageUrl} className="w-10 h-10 rounded-lg object-cover" alt="" />
-                        : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-lg">🏭</div>
+              {items.map(item => {
+                const moq = parseInt(item.post.moq) || 1
+                const price = parseFloat(item.post.price) || 0
+                const lineTotal = price * item.qty * moq
+                return (
+                  <div key={item.post.id} className="card p-4">
+                    <div className="flex gap-3 mb-3">
+                      {item.post.imageUrl
+                        ? <img src={item.post.imageUrl} className="w-14 h-14 rounded-xl object-cover shrink-0" alt="" onError={e => e.target.style.display='none'} />
+                        : <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-2xl shrink-0">📦</div>
                       }
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">{item.supplier.companyName}</div>
-                        <div className="text-xs text-gray-400">{item.supplier.location}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display font-bold text-gray-900 text-sm uppercase leading-tight truncate">{item.post.title}</div>
+                        <div className="text-xs text-gray-400 font-body truncate">{item.post.supplierName}</div>
+                        <div className="text-xs text-brand-600 font-bold mt-0.5 font-body">
+                          ${price.toFixed(2)}/pc · MOQ {moq} pcs
+                        </div>
+                      </div>
+                      <button onClick={() => removeFromCart(item.post.id)} className="text-gray-200 hover:text-red-400 transition-colors shrink-0">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    {/* Qty controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 border border-gray-200 rounded-xl overflow-hidden">
+                        <button onClick={() => updateQty(item.post.id, item.qty - 1)} className="px-3 py-1.5 hover:bg-gray-50 text-gray-500 font-bold transition-colors">
+                          <Minus size={13} />
+                        </button>
+                        <span className="text-sm font-black px-2 text-gray-900">{item.qty} × {moq}</span>
+                        <button onClick={() => updateQty(item.post.id, item.qty + 1)} className="px-3 py-1.5 hover:bg-gray-50 text-gray-500 font-bold transition-colors">
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                      <div className="font-display font-black text-gray-900 text-base">
+                        ${lineTotal.toFixed(2)}
                       </div>
                     </div>
-                    <button onClick={() => removeFromCart(item.supplier.id)} className="text-gray-300 hover:text-red-400 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
+
+                    {/* Chat with supplier */}
+                    {user && item.post.supplierId && (
+                      <Link to={`/chat/${item.post.supplierId}`} onClick={() => setIsOpen(false)}
+                        className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl py-2">
+                        <MessageCircle size={12} /> Chat with Supplier
+                      </Link>
+                    )}
                   </div>
-
-                  {/* Qty */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-gray-500">Est. Qty:</span>
-                    <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-                      <button onClick={() => updateQty(item.supplier.id, item.qty - 1)} className="px-2 py-1 hover:bg-gray-50 text-gray-500">
-                        <Minus size={12} />
-                      </button>
-                      <span className="text-sm font-semibold px-2">{item.qty * (item.supplier.moq || 100)}</span>
-                      <button onClick={() => updateQty(item.supplier.id, item.qty + 1)} className="px-2 py-1 hover:bg-gray-50 text-gray-500">
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                    <span className="text-xs text-gray-400">pcs</span>
-                  </div>
-
-                  {/* Note */}
-                  <textarea
-                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-brand-400 placeholder-gray-300"
-                    rows={2}
-                    placeholder="Add a note (e.g. color, size, spec)"
-                    value={item.note}
-                    onChange={e => updateNote(item.supplier.id, e.target.value)}
-                  />
-
-                  {/* Chat link */}
-                  {user && (
-                    <Link
-                      to={`/chat/${item.supplier.id}`}
-                      onClick={() => setIsOpen(false)}
-                      className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors rounded-lg py-2"
-                    >
-                      <MessageCircle size={12} /> Chat with Supplier
-                    </Link>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
 
-            {/* Footer */}
-            <div className="px-4 py-4 border-t border-gray-100 space-y-3">
+            {/* Footer - Total */}
+            <div className="px-4 py-4 border-t border-gray-100 bg-white">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-gray-500 font-body text-sm">Estimated Total</span>
+                <span className="font-display font-black text-2xl text-gray-900">${totalCost.toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-gray-400 font-body mb-3 text-center">
+                Contact each supplier via chat to confirm order, pricing & shipping
+              </p>
               {!user ? (
-                <Link to="/auth" onClick={() => setIsOpen(false)} className="btn-primary w-full justify-center">
-                  Login to Contact Suppliers
+                <Link to="/auth" onClick={() => setIsOpen(false)} className="btn-primary w-full justify-center py-3">
+                  Login to Place Order
                 </Link>
               ) : (
-                <div className="text-center text-xs text-gray-400">
-                  Chat with each supplier individually to discuss pricing & logistics
-                </div>
+                <button className="btn-primary w-full justify-center py-3" onClick={() => setIsOpen(false)}>
+                  Proceed to Contact Suppliers
+                </button>
               )}
-              <button onClick={clearCart} className="w-full text-xs text-gray-400 hover:text-red-400 transition-colors">
+              <button onClick={clearCart} className="w-full text-xs text-gray-300 hover:text-red-400 transition-colors mt-2 py-1">
                 Clear cart
               </button>
             </div>

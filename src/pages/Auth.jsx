@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import Logo from '../components/Logo'
 
 export default function Auth() {
   const [params] = useSearchParams()
@@ -32,14 +33,14 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-brand-600 text-sm mb-8 transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-brand-600 text-sm mb-8 transition-colors font-body">
           <ArrowLeft size={15} /> Back to home
         </Link>
 
         <div className="card p-8">
-          {/* Logo */}
           <div className="text-center mb-8">
-            <img src="/logo.png" alt="S&S Shop" className="h-12 w-auto mx-auto mb-4" />
+            {/* Logo component — base64 embedded, always works */}
+            <Logo className="h-12 w-auto mx-auto mb-5" />
             <h1 className="font-display text-3xl font-black text-gray-900 uppercase tracking-wide">
               {isSignup ? 'Create Account' : 'Welcome Back'}
             </h1>
@@ -74,7 +75,7 @@ export default function Auth() {
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 text-base font-bold">
+            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 text-base font-black">
               {loading ? 'Please wait...' : isSignup ? 'Create Account' : 'Sign In'}
             </button>
           </form>

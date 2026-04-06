@@ -3,11 +3,12 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import Home from './pages/Home'
 import Auth from './pages/Auth'
-import SupplierOnboarding from './pages/SupplierOnboarding'
+import MyPosts from './pages/MyPosts'
 import SupplierProfile from './pages/SupplierProfile'
 import ChatPage from './pages/ChatPage'
 import AdminDashboard from './pages/AdminDashboard'
 import Chats from './pages/Chats'
+import ProfilePage from './pages/ProfilePage'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -30,7 +31,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/become-supplier" element={<ProtectedRoute><SupplierOnboarding /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/my-posts" element={<ProtectedRoute><MyPosts /></ProtectedRoute>} />
             <Route path="/supplier/:id" element={<SupplierProfile />} />
             <Route path="/chat/:supplierId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
             <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
