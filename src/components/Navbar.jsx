@@ -197,6 +197,7 @@ export default function Navbar({ searchValue, onSearchChange }) {
               </>
             ) : (
               <>
+                <Link to="/how-it-works" className="btn-ghost text-sm hidden sm:inline-flex">How it Works</Link>
                 <Link to="/auth" className="btn-ghost text-sm">Login</Link>
                 <Link to="/auth?mode=signup" className="btn-primary text-sm">Get Started</Link>
               </>

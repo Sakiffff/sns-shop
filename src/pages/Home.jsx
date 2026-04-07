@@ -3,7 +3,7 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { Search, MapPin, MessageCircle, ShieldCheck, Star, ShoppingBag, ArrowRight, Package, Sparkles } from 'lucide-react'
+import { Search, MapPin, MessageCircle, ShieldCheck, Star, ShoppingBag, ArrowRight, Package, Sparkles, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { useCountry } from '../contexts/CountryContext'
@@ -27,6 +27,10 @@ function StarRating({ rating, count }) {
 function PostCard({ post, supplier }) {
   const { addToCart, items } = useCart()
   const { user } = useAuth()
+  const [showFilters, setShowFilters] = useState(false)
+  const [moqMax, setMoqMax] = useState('')
+  const [priceMax, setPriceMax] = useState('')
+  const [sortBy, setSortBy] = useState('default')
   const { country } = useCountry()
   const inCart = items.some(i => i.post.id === post.id)
   const isVerified = supplier?.isVerifiedSeller
@@ -142,6 +146,10 @@ export default function Home() {
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
+  const [showFilters, setShowFilters] = useState(false)
+  const [moqMax, setMoqMax] = useState('')
+  const [priceMax, setPriceMax] = useState('')
+  const [sortBy, setSortBy] = useState('default')
   const { country } = useCountry()
   const heroRef = useRef()
 
@@ -184,8 +192,13 @@ export default function Home() {
       p.tags?.toLowerCase().includes(search.toLowerCase())
     )
     if (category !== 'All') result = result.filter(p => p.category === category)
+    if (moqMax) result = result.filter(p => !p.moq || parseInt(p.moq) <= parseInt(moqMax))
+    if (priceMax) result = result.filter(p => !p.price || parseFloat(p.price) <= parseFloat(priceMax))
+    if (sortBy === 'price_asc') result = [...result].sort((a,b) => (parseFloat(a.price)||0) - (parseFloat(b.price)||0))
+    if (sortBy === 'price_desc') result = [...result].sort((a,b) => (parseFloat(b.price)||0) - (parseFloat(a.price)||0))
+    if (sortBy === 'newest') result = [...result].sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0))
     setFiltered(result)
-  }, [search, category, posts, verifiedOnly, suppliers])
+  }, [search, category, posts, verifiedOnly, suppliers, moqMax, priceMax, sortBy])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -268,6 +281,41 @@ export default function Home() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Advanced filters row */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:border-brand-300 px-4 py-2 rounded-xl transition-colors font-body">
+            <SlidersHorizontal size={14} /> Filters {showFilters ? '▲' : '▼'}
+          </button>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+            className="text-sm font-body border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-600 hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-400">
+            <option value="default">Sort: Recommended</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="newest">Newest First</option>
+          </select>
+        </div>
+        {showFilters && (
+          <div className="mt-3 p-4 bg-white rounded-2xl border border-gray-200 flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="label text-xs">Max MOQ (pcs)</label>
+              <input type="number" min="0" value={moqMax} onChange={e=>setMoqMax(e.target.value)}
+                className="input w-36 text-sm" placeholder="e.g. 500" />
+            </div>
+            <div>
+              <label className="label text-xs">Max Price (BDT)</label>
+              <input type="number" min="0" value={priceMax} onChange={e=>setPriceMax(e.target.value)}
+                className="input w-36 text-sm" placeholder="e.g. 500" />
+            </div>
+            <button onClick={() => { setMoqMax(''); setPriceMax(''); setSortBy('default') }}
+              className="text-xs text-gray-400 hover:text-brand-600 font-body pb-3">
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Grid */}

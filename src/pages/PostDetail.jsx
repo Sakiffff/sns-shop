@@ -140,12 +140,23 @@ export default function PostDetail() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Image */}
-          <div className="rounded-2xl overflow-hidden bg-gray-100 aspect-square">
-            {post.imageUrl
-              ? <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover"
-                  onError={e => { e.target.style.display='none' }} />
-              : <div className="w-full h-full flex items-center justify-center text-7xl">📦</div>
-            }
+          <div className="space-y-2">
+            <div className="rounded-2xl overflow-hidden bg-gray-100 aspect-square">
+              {post.imageUrl
+                ? <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover"
+                    onError={e => { e.target.style.display='none' }} />
+                : <div className="w-full h-full flex items-center justify-center text-7xl">📦</div>
+              }
+            </div>
+            {(post.imageUrl2 || post.imageUrl3) && (
+              <div className="grid grid-cols-2 gap-2">
+                {[post.imageUrl2, post.imageUrl3].filter(Boolean).map((url, i) => (
+                  <div key={i} className="rounded-xl overflow-hidden bg-gray-100 aspect-square">
+                    <img src={url} alt="" className="w-full h-full object-cover" onError={e=>e.target.style.display='none'} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Info */}
@@ -188,6 +199,41 @@ export default function PostDetail() {
             {post.description && (
               <p className="text-gray-500 text-sm leading-relaxed font-body mb-5">{post.description}</p>
             )}
+            
+            {/* Extra details */}
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {post.material && (
+                <div className="bg-gray-50 rounded-xl p-3 flex items-start gap-2">
+                  <FlaskConical size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                  <div><div className="text-xs text-gray-400 font-body">Material</div>
+                    <div className="text-sm font-semibold text-gray-700 font-body">{post.material}</div></div>
+                </div>
+              )}
+              {post.colors && (
+                <div className="bg-gray-50 rounded-xl p-3 flex items-start gap-2">
+                  <Palette size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                  <div><div className="text-xs text-gray-400 font-body">Colors</div>
+                    <div className="text-sm font-semibold text-gray-700 font-body">{post.colors}</div></div>
+                </div>
+              )}
+              {post.productionTime && (
+                <div className="bg-gray-50 rounded-xl p-3 flex items-start gap-2">
+                  <Clock size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                  <div><div className="text-xs text-gray-400 font-body">Production Time</div>
+                    <div className="text-sm font-semibold text-gray-700 font-body">{post.productionTime}</div></div>
+                </div>
+              )}
+              <div className="bg-gray-50 rounded-xl p-3 flex items-start gap-2">
+                {post.sampleAvailable
+                  ? <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                  : <XCircle size={14} className="text-gray-300 mt-0.5 shrink-0" />
+                }
+                <div><div className="text-xs text-gray-400 font-body">Sample</div>
+                  <div className="text-sm font-semibold text-gray-700 font-body">
+                    {post.sampleAvailable ? (post.samplePrice ? "৳" + post.samplePrice + " BDT" : "Available") : "Not available"}
+                  </div></div>
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <button

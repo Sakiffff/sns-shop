@@ -11,6 +11,7 @@ import ChatPage from './pages/ChatPage'
 import AdminDashboard from './pages/AdminDashboard'
 import Chats from './pages/Chats'
 import ProfilePage from './pages/ProfilePage'
+import HowItWorks from './pages/HowItWorks'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -34,6 +35,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/my-posts" element={<ProtectedRoute><MyPosts /></ProtectedRoute>} />
               <Route path="/supplier/:id" element={<SupplierProfile />} />
