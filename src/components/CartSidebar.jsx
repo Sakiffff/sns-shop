@@ -6,13 +6,20 @@ import { useAuth } from '../contexts/AuthContext'
 import { convertFromBDT, convertFromBDTRaw, getCurrencyForCountry } from '../utils/currency'
 
 export default function CartSidebar() {
-  const { items, isOpen, setIsOpen, removeFromCart, updateQty, clearCart, getTotalInCountry } = useCart()
+  const { items, isOpen, setIsOpen, removeItem, updateQty, clearCart, getTotalInCountry } = useCart()
   const { user } = useAuth()
   const { country } = useCountry()
   const curr = getCurrencyForCountry(country)
   const { total, symbol } = getTotalInCountry(country)
 
   if (!isOpen) return null
+
+  // Group by supplier for display
+  const bySupplier = {}
+  items.forEach(i => {
+    if (!bySupplier[i.supplierId]) bySupplier[i.supplierId] = { name: i.supplierName, id: i.supplierId, items: [] }
+    bySupplier[i.supplierId].items.push(i)
+  })
 
   return (
     <>
@@ -32,11 +39,9 @@ export default function CartSidebar() {
           </button>
         </div>
 
-        {/* Country + currency info */}
         <div className="px-4 pt-3">
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-500 font-body flex items-center gap-2">
-            <span>🌍</span>
-            <span>Prices shown in <strong>{curr.code}</strong> for <strong>{country}</strong></span>
+            🌍 Prices in <strong>{curr.code}</strong> · {country}
           </div>
         </div>
 
@@ -44,69 +49,74 @@ export default function CartSidebar() {
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <ShoppingBag size={52} className="text-gray-100 mb-4" />
             <p className="font-display text-xl font-black text-gray-700 uppercase mb-1">Cart is empty</p>
-            <p className="text-gray-400 text-sm font-body">Browse products and add items to order</p>
+            <p className="text-gray-400 text-sm font-body">Select items from product listings</p>
           </div>
         ) : (
           <>
             <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex gap-2 items-start">
               <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 font-body">
-                Prices converted from BDT. Final pricing confirmed with supplier via chat.
-              </p>
+              <p className="text-xs text-amber-700 font-body">Prices converted from BDT. Confirm final pricing with supplier via chat.</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-              {items.map(item => {
-                const moq = parseInt(item.post.moq) || 1
-                const bdtPrice = parseFloat(item.post.price) || 0
-                const lineTotal = convertFromBDTRaw(bdtPrice * item.qty * moq, country)
-                const unitPrice = convertFromBDT(bdtPrice, country)
-                const curr2 = getCurrencyForCountry(country)
-
-                return (
-                  <div key={item.post.id} className="card p-4">
-                    <div className="flex gap-3 mb-3">
-                      {item.post.imageUrl
-                        ? <img src={item.post.imageUrl} className="w-14 h-14 rounded-xl object-cover shrink-0" alt="" onError={e => e.target.style.display='none'} />
-                        : <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-2xl shrink-0">📦</div>
-                      }
-                      <div className="flex-1 min-w-0">
-                        <div className="font-display font-black text-gray-900 text-sm uppercase leading-tight truncate">{item.post.title}</div>
-                        <div className="text-xs text-gray-400 font-body truncate">{item.post.supplierName}</div>
-                        <div className="text-xs text-brand-600 font-bold mt-0.5 font-body">
-                          {unitPrice}/pc · MOQ {moq} pcs
-                        </div>
-                        <div className="text-xs text-gray-300 font-body">৳{bdtPrice}/pc (BDT)</div>
-                      </div>
-                      <button onClick={() => removeFromCart(item.post.id)} className="text-gray-200 hover:text-red-400 transition-colors shrink-0">
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 border border-gray-200 rounded-xl overflow-hidden">
-                        <button onClick={() => updateQty(item.post.id, item.qty - 1)} className="px-3 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors">
-                          <Minus size={13} />
-                        </button>
-                        <span className="text-sm font-black px-2 text-gray-900">{item.qty} × {moq}</span>
-                        <button onClick={() => updateQty(item.post.id, item.qty + 1)} className="px-3 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors">
-                          <Plus size={13} />
-                        </button>
-                      </div>
-                      <div className="font-display font-black text-gray-900 text-base">
-                        {curr2.symbol}{lineTotal >= 1 ? lineTotal.toFixed(2) : lineTotal.toFixed(4)}
-                      </div>
-                    </div>
-
-                    {user && item.post.supplierId && (
-                      <Link to={`/chat/${item.post.supplierId}`} onClick={() => setIsOpen(false)}
-                        className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl py-2">
-                        <MessageCircle size={12} /> Chat with Supplier
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+              {Object.values(bySupplier).map(sup => (
+                <div key={sup.id}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase font-body">{sup.name}</span>
+                    {user && (
+                      <Link to={`/chat/${sup.id}`} onClick={() => setIsOpen(false)}
+                        className="text-xs text-brand-600 font-bold hover:text-brand-800 flex items-center gap-1 font-body">
+                        <MessageCircle size={11} /> Chat
                       </Link>
                     )}
                   </div>
-                )
-              })}
+                  <div className="space-y-2">
+                    {sup.items.map(cartItem => {
+                      const bdtPrice = parseFloat(cartItem.item.price) || 0
+                      const lineTotal = convertFromBDTRaw(bdtPrice * cartItem.qty, country)
+                      const unitPrice = convertFromBDT(bdtPrice, country)
+                      return (
+                        <div key={cartItem.key} className="card p-3">
+                          <div className="flex gap-3 mb-2">
+                            {cartItem.item.imageUrl
+                              ? <img src={cartItem.item.imageUrl} className="w-12 h-12 rounded-lg object-cover shrink-0" alt="" onError={e => e.target.style.display='none'} />
+                              : <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xl shrink-0">📦</div>
+                            }
+                            <div className="flex-1 min-w-0">
+                              <div className="font-display font-black text-gray-900 text-xs uppercase leading-tight truncate">{cartItem.item.name}</div>
+                              <div className="text-xs text-gray-400 font-body truncate">{cartItem.postTitle}</div>
+                              {(cartItem.size || cartItem.color) && (
+                                <div className="flex gap-2 mt-0.5">
+                                  {cartItem.size && <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-body">{cartItem.size}</span>}
+                                  {cartItem.color && <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-body">{cartItem.color}</span>}
+                                </div>
+                              )}
+                              <div className="text-xs text-brand-600 font-bold font-body mt-0.5">{unitPrice}/pc</div>
+                            </div>
+                            <button onClick={() => removeItem(cartItem.key)} className="text-gray-200 hover:text-red-400 transition-colors shrink-0">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+                              <button onClick={() => updateQty(cartItem.key, cartItem.qty - 1)} className="px-2 py-1 hover:bg-gray-50 text-gray-500 transition-colors">
+                                <Minus size={12} />
+                              </button>
+                              <span className="text-sm font-black px-2 text-gray-900">{cartItem.qty}</span>
+                              <button onClick={() => updateQty(cartItem.key, cartItem.qty + 1)} className="px-2 py-1 hover:bg-gray-50 text-gray-500 transition-colors">
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                            <div className="font-display font-black text-gray-900">
+                              {curr.symbol}{lineTotal >= 1 ? lineTotal.toFixed(2) : lineTotal.toFixed(4)}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="px-4 py-4 border-t border-gray-100 bg-white">
@@ -116,21 +126,15 @@ export default function CartSidebar() {
                   {symbol}{total >= 1 ? total.toFixed(2) : total.toFixed(4)}
                 </span>
               </div>
-              <p className="text-xs text-gray-400 font-body mb-3 text-center">
-                Chat with each supplier to confirm order & shipping
-              </p>
+              <p className="text-xs text-gray-400 font-body mb-3 text-center">Chat each supplier to confirm order & shipping</p>
               {!user ? (
-                <Link to="/auth" onClick={() => setIsOpen(false)} className="btn-primary w-full justify-center py-3">
-                  Login to Order
-                </Link>
+                <Link to="/auth" onClick={() => setIsOpen(false)} className="btn-primary w-full justify-center py-3">Login to Order</Link>
               ) : (
                 <button className="btn-primary w-full justify-center py-3" onClick={() => setIsOpen(false)}>
-                  Contact Suppliers to Confirm
+                  Proceed to Contact Suppliers
                 </button>
               )}
-              <button onClick={clearCart} className="w-full text-xs text-gray-300 hover:text-red-400 transition-colors mt-2 py-1">
-                Clear cart
-              </button>
+              <button onClick={clearCart} className="w-full text-xs text-gray-300 hover:text-red-400 transition-colors mt-2 py-1">Clear cart</button>
             </div>
           </>
         )}

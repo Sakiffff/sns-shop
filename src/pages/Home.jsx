@@ -40,9 +40,9 @@ function PostCard({ post, supplier }) {
       <div className="relative overflow-hidden h-48 bg-gray-50">
         {post.imageUrl ? (
           <>
-            <img src={post.imageUrl} alt={post.title}
+            <img src={post.bannerUrl||post.imageUrl} alt={post.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={e => { e.target.style.display='none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display='flex') }} />
+              onError={e => { e.target.style.display='none' }} />
             <div className="w-full h-full items-center justify-center text-5xl bg-gray-100 hidden absolute inset-0">📦</div>
           </>
         ) : (

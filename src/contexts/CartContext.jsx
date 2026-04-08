@@ -4,44 +4,56 @@ import { convertFromBDTRaw, getCurrencyForCountry } from '../utils/currency'
 const CartContext = createContext({})
 export function useCart() { return useContext(CartContext) }
 
+// cartItem: { postId, postTitle, bannerUrl, supplierId, supplierName, item: { id, name, imageUrl, price, size, color }, qty }
 export function CartProvider({ children }) {
   const [items, setItems] = useState([])
   const [isOpen, setIsOpen] = useState(false)
 
-  function addToCart(post) {
+  function addItem(post, item, qty = 1, size = '', color = '') {
+    const key = `${post.id}_${item.id}_${size}_${color}`
     setItems(prev => {
-      const existing = prev.find(i => i.post.id === post.id)
-      if (existing) return prev.map(i => i.post.id === post.id ? { ...i, qty: i.qty + 1 } : i)
-      return [...prev, { post, qty: 1 }]
+      const existing = prev.find(i => i.key === key)
+      if (existing) return prev.map(i => i.key === key ? { ...i, qty: i.qty + qty } : i)
+      return [...prev, {
+        key,
+        postId: post.id,
+        postTitle: post.title,
+        bannerUrl: post.bannerUrl || post.imageUrl || '',
+        supplierId: post.supplierId,
+        supplierName: post.supplierName,
+        item: { ...item },
+        qty,
+        size,
+        color,
+      }]
     })
     setIsOpen(true)
   }
 
-  function removeFromCart(postId) {
-    setItems(prev => prev.filter(i => i.post.id !== postId))
+  function removeItem(key) {
+    setItems(prev => prev.filter(i => i.key !== key))
   }
 
-  function updateQty(postId, qty) {
-    if (qty < 1) { removeFromCart(postId); return }
-    setItems(prev => prev.map(i => i.post.id === postId ? { ...i, qty } : i))
+  function updateQty(key, qty) {
+    if (qty < 1) { removeItem(key); return }
+    setItems(prev => prev.map(i => i.key === key ? { ...i, qty } : i))
   }
 
   function clearCart() { setItems([]) }
 
-  const totalItems = items.reduce((sum, i) => sum + i.qty, 0)
+  const totalItems = items.reduce((s, i) => s + i.qty, 0)
 
   function getTotalInCountry(country) {
     const curr = getCurrencyForCountry(country)
-    const total = items.reduce((sum, i) => {
-      const bdtPrice = parseFloat(i.post.price) || 0
-      const moq = parseInt(i.post.moq) || 1
-      return sum + convertFromBDTRaw(bdtPrice * i.qty * moq, country)
+    const total = items.reduce((s, i) => {
+      const bdtPrice = parseFloat(i.item.price) || 0
+      return s + convertFromBDTRaw(bdtPrice * i.qty, country)
     }, 0)
     return { total, symbol: curr.symbol, code: curr.code }
   }
 
   return (
-    <CartContext.Provider value={{ items, isOpen, setIsOpen, addToCart, removeFromCart, updateQty, clearCart, totalItems, getTotalInCountry }}>
+    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, removeItem, updateQty, clearCart, totalItems, getTotalInCountry }}>
       {children}
     </CartContext.Provider>
   )
