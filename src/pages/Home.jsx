@@ -33,12 +33,12 @@ function PostCard({ post, supplier }) {
   const localPrice = convertFromBDT(parseFloat(post.price) || 0, country)
 
   return (
-    <div className={`card-hover overflow-hidden flex flex-col group cursor-pointer ${isVerified ? 'ring-2 ring-emerald-400 ring-offset-1' : ''}`}
+    <div className="card-hover overflow-hidden flex flex-col group cursor-pointer"
       onClick={() => navigate(`/post/${post.id}`)}>
 
       {/* Image */}
       <div className="relative overflow-hidden h-48 bg-gray-50">
-        {post.imageUrl ? (
+        {(post.bannerUrl || post.imageUrl) ? (
           <>
             <img src={post.bannerUrl||post.imageUrl} alt={post.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -50,8 +50,9 @@ function PostCard({ post, supplier }) {
         )}
         {isVerified && (
           <div className="absolute top-2 left-2">
-            <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
-              <ShieldCheck size={9} /> Verified
+            <span className="verified-seller-badge">
+              <ShieldCheck size={10} />
+              Verified Seller
             </span>
           </div>
         )}

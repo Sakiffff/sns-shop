@@ -199,9 +199,7 @@ export default function PostDetail() {
               )}
               {isVerified && (
                 <div className="absolute top-3 left-3">
-                  <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
-                    <ShieldCheck size={10} /> Verified Seller
-                  </span>
+  <span className="verified-seller-badge"><ShieldCheck size={10} /> Verified Seller</span>
                 </div>
               )}
             </div>

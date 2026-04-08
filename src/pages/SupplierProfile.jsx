@@ -82,9 +82,7 @@ export default function SupplierProfile() {
                   {supplier.companyName}
                 </h1>
                 {isVerified && (
-                  <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                    <ShieldCheck size={11} /> Verified Seller
-                  </span>
+<span className="verified-seller-badge"><ShieldCheck size={10}/> Verified Seller</span>
                 )}
                 {isSnsVerified && (
                   <span className="inline-flex items-center gap-1 bg-brand-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">

@@ -120,19 +120,33 @@ export default function AdminDashboard() {
   }
 
   async function savePost() {
-    setSaving(true)
+    setSaving(true); setActionError('')
     try {
+      // Strip 'id' — Firestore rejects it in updates. Also clean undefined values.
+      const { id: _id, ...rest } = editForm
       const data = {
-        ...editForm,
-        moq: parseInt(editForm.moq)||0,
-        availableColors: editForm.availableColors ? editForm.availableColors.split(',').map(s=>s.trim()).filter(Boolean) : [],
-        imageUrl: editForm.bannerUrl, // legacy compat
+        ...rest,
+        moq: parseInt(editForm.moq) || 0,
+        availableColors: editForm.availableColors
+          ? editForm.availableColors.split(',').map(s => s.trim()).filter(Boolean)
+          : [],
+        imageUrl: editForm.bannerUrl || '', // legacy compat
         updatedAt: new Date().toISOString(),
       }
-      await updateDoc(doc(db,'posts',editingPostId), data)
-      setPosts(p=>p.map(x=>x.id===editingPostId?{...x,...data}:x))
-      setEditingPostId(null); setEditForm(null)
-    } catch(e) { setActionError('Save failed: '+e.message) }
+      // Remove any undefined values (Firestore rejects them)
+      Object.keys(data).forEach(k => data[k] === undefined && delete data[k])
+      // Use setDoc with merge so it works even if some fields are new
+      await setDoc(doc(db, 'posts', editingPostId), data, { merge: true })
+      const saved = { id: editingPostId, ...data }
+      setPosts(p => p.map(x => x.id === editingPostId ? saved : x))
+      setFilteredPosts(p => p.map(x => x.id === editingPostId ? saved : x))
+      setEditingPostId(null)
+      setEditForm(null)
+      setActionError('') // clear any previous errors
+    } catch(e) {
+      console.error('savePost error:', e)
+      setActionError('Save failed: ' + e.message + '. Check Firestore rules allow admin writes to posts.')
+    }
     setSaving(false)
   }
 
@@ -369,21 +383,31 @@ export default function AdminDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-body">
                 <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>{['Company','Location','Verified Seller','Actions'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">{h}</th>)}</tr>
+                  <tr>{['Company','Location','Business Type','Verified','Actions'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {suppliers.map(s=>(
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-bold text-gray-900 whitespace-nowrap">{s.companyName||'—'}</td>
                       <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{s.location||'—'}</td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs font-body">{s.businessType||'—'}</td>
                       <td className="px-4 py-3">{s.isVerifiedSeller?<span className="badge-verified"><ShieldCheck size={9}/>Yes</span>:<span className="text-gray-300 text-xs">No</span>}</td>
                       <td className="px-4 py-3">
-                        {s.isVerifiedSeller && (
+                        <div className="flex gap-2">
+                          {s.isVerifiedSeller && (
+                            <button onClick={async()=>{
+                              await setDoc(doc(db,'suppliers',s.id),{isVerifiedSeller:false},{merge:true})
+                              setSuppliers(x=>x.map(v=>v.id===s.id?{...v,isVerifiedSeller:false}:v))
+                            }} className="text-xs px-3 py-1.5 rounded-lg text-orange-600 border border-orange-200 hover:bg-orange-50 transition-colors">Remove Verified</button>
+                          )}
                           <button onClick={async()=>{
-                            await setDoc(doc(db,'suppliers',s.id),{isVerifiedSeller:false},{merge:true})
-                            setSuppliers(x=>x.map(v=>v.id===s.id?{...v,isVerifiedSeller:false}:v))
-                          }} className="text-xs px-3 py-1.5 rounded-lg text-red-600 border border-red-200 hover:bg-red-50 transition-colors">Remove</button>
-                        )}
+                            if(!confirm('Delete this supplier profile? This cannot be undone.')) return
+                            try {
+                              await deleteDoc(doc(db,'suppliers',s.id))
+                              setSuppliers(x=>x.filter(v=>v.id!==s.id))
+                            } catch(e) { setActionError('Delete failed: '+e.message) }
+                          }} className="text-xs px-3 py-1.5 rounded-lg text-red-600 border border-red-200 hover:bg-red-50 transition-colors">Delete</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
