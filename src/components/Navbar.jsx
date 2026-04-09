@@ -168,6 +168,9 @@ export default function Navbar({ searchValue, onSearchChange }) {
                         <Link to="/profile" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 font-body">
                           <User size={14} className="text-gray-400" /> Edit Profile
                         </Link>
+                        <Link to="/my-orders" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 font-body">
+                          <ShoppingBag size={14} className="text-gray-400" /> My Orders
+                        </Link>
                         <Link to="/my-posts" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 font-body">
                           <FileText size={14} className="text-gray-400" />
                           {isSupplier ? 'My Sale Posts' : 'Become a Supplier'}
@@ -222,6 +225,9 @@ export default function Navbar({ searchValue, onSearchChange }) {
                   </div>
                   <Link to="/chats" onClick={() => setShowMobileMenu(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-gray-50 font-body">
                     <MessageCircle size={16} className="text-gray-400" /> Chats
+                  </Link>
+                  <Link to="/my-orders" onClick={() => setShowMobileMenu(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-gray-50 font-body">
+                    <ShoppingBag size={16} className="text-gray-400" /> My Orders
                   </Link>
                   <Link to="/profile" onClick={() => setShowMobileMenu(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-gray-50 font-body">
                     <User size={16} className="text-gray-400" /> Edit Profile

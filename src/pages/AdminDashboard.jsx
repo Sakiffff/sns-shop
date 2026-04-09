@@ -3,7 +3,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/fi
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import Navbar from '../components/Navbar'
-import { Check, X, Users, Building, ShieldCheck, AlertCircle, RefreshCw, Trash2, FileText, Edit2, Save, Plus, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, X, Users, Building, ShieldCheck, AlertCircle, RefreshCw, Trash2, FileText, Edit2, Save, Plus, Search, ChevronDown, ChevronUp, ShoppingBag, Clock, Truck } from 'lucide-react'
 
 const CATEGORIES = ['T-Shirts','Denim','Hoodies','Polo Shirts','Activewear','Outerwear','Dresses','Knitwear','Accessories','Socks','Underwear','Swimwear','Uniforms','Other']
 const COMMON_SIZES = ['XS','S','M','L','XL','XXL','XXXL','Free Size','Custom']
@@ -80,6 +80,8 @@ export default function AdminDashboard() {
   const [editForm, setEditForm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [orders, setOrders] = useState([])
+  const [orderFilter, setOrderFilter] = useState('all')
 
   function showSuccess(msg) {
     setActionSuccess(msg)
@@ -90,10 +92,11 @@ export default function AdminDashboard() {
   async function loadData() {
     setLoading(true); setActionError('')
     try {
-      const [supSnap, reqSnap, postsSnap] = await Promise.all([
+      const [supSnap, reqSnap, postsSnap, ordersSnap] = await Promise.all([
         getDocs(collection(db,'suppliers')),
         getDocs(collection(db,'badgeRequests')),
         getDocs(collection(db,'posts')),
+        getDocs(collection(db,'orders')),
       ])
       setSuppliers(supSnap.docs.map(d => ({id:d.id,...d.data()})))
       setRequests(reqSnap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => {
@@ -105,6 +108,9 @@ export default function AdminDashboard() {
         .sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0))
       setPosts(allPosts)
       setFilteredPosts(allPosts)
+      const allOrders = ordersSnap.docs.map(d => ({id:d.id,...d.data()}))
+        .sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0))
+      setOrders(allOrders)
     } catch(e) { setActionError('Failed to load: ' + e.message) }
     setLoading(false)
   }
@@ -210,6 +216,20 @@ export default function AdminDashboard() {
       }
     }
     setSaving(false)
+  }
+
+  async function updateOrderStatus(orderId, newStatus, statusLabel) {
+    setActionLoading(orderId)
+    try {
+      await setDoc(doc(db,'orders',orderId), {
+        status: newStatus,
+        statusLabel,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true })
+      setOrders(o => o.map(x => x.id===orderId ? {...x, status:newStatus, statusLabel} : x))
+      showSuccess('Order status updated!')
+    } catch(e) { setActionError('Update failed: '+e.message) }
+    setActionLoading(null)
   }
 
   async function approveBadge(req) {
@@ -339,12 +359,13 @@ export default function AdminDashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {[
             {label:'Suppliers', value:suppliers.length, icon:<Building size={18}/>},
             {label:'Verified', value:suppliers.filter(s=>s.isVerifiedSeller).length, icon:<ShieldCheck size={18} className="text-emerald-600"/>},
             {label:'Total Posts', value:posts.length, icon:<FileText size={18}/>},
-            {label:'Pending', value:pending.length, icon:<Users size={18} className="text-brand-600"/>},
+            {label:'Pending Orders', value:orders.filter(o=>o.status==='pending_payment').length, icon:<ShoppingBag size={18} className="text-orange-500"/>},
+            {label:'Pending Badges', value:pending.length, icon:<Users size={18} className="text-brand-600"/>},
           ].map(stat => (
             <div key={stat.label} className="card p-5">
               <div className="mb-2">{stat.icon}</div>
@@ -357,6 +378,7 @@ export default function AdminDashboard() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
           {[
+            {key:'orders', label:`Orders (${orders.filter(o=>o.status==='pending_payment').length} pending)`},
             {key:'requests', label:pending.length > 0 ? `Badge Requests (${pending.length} pending)` : 'Badge Requests'},
             {key:'posts', label:`All Posts (${posts.length})`},
             {key:'suppliers', label:`Suppliers (${suppliers.length})`},
@@ -370,6 +392,123 @@ export default function AdminDashboard() {
 
         {loading ? (
           <div className="text-center py-20 text-gray-400 font-body">Loading...</div>
+        ) : tab === 'orders' ? (
+          /* ── Orders ── */
+          <div>
+            <div className="flex gap-2 mb-4 flex-wrap">
+              {[
+                {v:'all', l:'All Orders'},
+                {v:'pending_payment', l:'Pending Verification'},
+                {v:'payment_confirmed', l:'Confirmed'},
+                {v:'in_delivery', l:'In Delivery'},
+                {v:'shipped', l:'Shipped'},
+              ].map(f => (
+                <button key={f.v} onClick={() => setOrderFilter(f.v)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold font-body transition-all ${orderFilter===f.v ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
+                  {f.l} {f.v !== 'all' && `(${orders.filter(o=>o.status===f.v).length})`}
+                </button>
+              ))}
+            </div>
+            {(orderFilter==='all' ? orders : orders.filter(o=>o.status===orderFilter)).length === 0 ? (
+              <div className="text-center py-16 text-gray-400 font-body">No orders in this category.</div>
+            ) : (
+              <div className="space-y-4">
+                {(orderFilter==='all' ? orders : orders.filter(o=>o.status===orderFilter)).map(order => (
+                  <div key={order.id} className={`card p-5 ${order.status==='pending_payment' ? 'border-l-4 border-l-yellow-400' : ''}`}>
+                    <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-display font-black text-gray-900 uppercase">#{order.id.slice(0,8).toUpperCase()}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold font-body ${
+                            order.status==='pending_payment' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                            order.status==='payment_confirmed' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                            order.status==='in_delivery' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                            order.status==='shipped' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                            'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>{order.statusLabel || order.status}</span>
+                        </div>
+                        <div className="text-sm text-gray-500 font-body">
+                          <strong>{order.buyerName}</strong> · {order.buyerEmail}
+                        </div>
+                        <div className="text-xs text-gray-400 font-body">
+                          From: {order.buyerCountry} · {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-display font-black text-2xl text-gray-900">
+                          {order.currencySymbol}{(order.totalAmount||0).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-400 font-body">{order.currency}</div>
+                      </div>
+                    </div>
+
+                    {/* Remitly ref */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+                      <div className="text-xs text-amber-600 font-body font-bold mb-0.5">Remitly Reference</div>
+                      <div className="font-mono font-black text-amber-900 text-lg">{order.remitlyRef}</div>
+                      {order.notes && <div className="text-xs text-amber-700 font-body mt-1">Notes: {order.notes}</div>}
+                    </div>
+
+                    {/* Items */}
+                    <div className="space-y-1.5 mb-4">
+                      {(order.items||[]).map((item,i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm bg-gray-50 rounded-lg px-3 py-2">
+                          {item.itemImage && <img src={item.itemImage} className="w-7 h-7 rounded object-cover shrink-0" alt="" onError={e=>e.target.style.display="none"}/>}
+                          <div className="flex-1 min-w-0">
+                            <span className="font-bold text-gray-800 truncate block">{item.itemName}</span>
+                            <span className="text-xs text-gray-400 font-body">
+                              {item.supplierName} · Qty {item.qty}{item.size?` · ${item.size}`:""}{item.color?` · ${item.color}`:""}
+                            </span>
+                          </div>
+                          <span className="text-xs text-brand-600 font-bold font-body shrink-0">{order.currencySymbol}{(item.priceConverted||0).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2 flex-wrap">
+                      {order.status === 'pending_payment' && (
+                        <button onClick={() => updateOrderStatus(order.id, 'payment_confirmed', 'Payment Confirmed')}
+                          disabled={actionLoading===order.id}
+                          className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700 font-bold disabled:opacity-50 transition-colors">
+                          {actionLoading===order.id ? '...' : <><Check size={12}/> Confirm Payment</>}
+                        </button>
+                      )}
+                      {order.status === 'payment_confirmed' && (
+                        <button onClick={() => updateOrderStatus(order.id, 'in_delivery', 'In Delivery Queue')}
+                          disabled={actionLoading===order.id}
+                          className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 font-bold disabled:opacity-50 transition-colors">
+                          {actionLoading===order.id ? '...' : <><Truck size={12}/> Move to Delivery</>}
+                        </button>
+                      )}
+                      {order.status === 'in_delivery' && (
+                        <button onClick={() => updateOrderStatus(order.id, 'shipped', 'Shipped')}
+                          disabled={actionLoading===order.id}
+                          className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-bold disabled:opacity-50 transition-colors">
+                          {actionLoading===order.id ? '...' : <><Truck size={12}/> Mark as Shipped</>}
+                        </button>
+                      )}
+                      {order.status === 'shipped' && (
+                        <button onClick={() => updateOrderStatus(order.id, 'delivered', 'Delivered')}
+                          disabled={actionLoading===order.id}
+                          className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700 font-bold disabled:opacity-50 transition-colors">
+                          {actionLoading===order.id ? '...' : <><Check size={12}/> Mark Delivered</>}
+                        </button>
+                      )}
+                      <button onClick={async () => {
+                        if(!confirm('Delete this order?')) return
+                        await deleteDoc(doc(db,'orders',order.id))
+                        setOrders(o => o.filter(x => x.id !== order.id))
+                      }} className="text-xs px-3 py-2 rounded-xl text-red-500 border border-red-200 hover:bg-red-50 font-body">
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         ) : tab === 'requests' ? (
 
           /* ── Badge Requests ── */

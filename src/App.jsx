@@ -13,6 +13,7 @@ import Chats from './pages/Chats'
 import ProfilePage from './pages/ProfilePage'
 import HowItWorks from './pages/HowItWorks'
 import OrderConfirmation from './pages/OrderConfirmation'
+import MyOrders from './pages/MyOrders'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -39,11 +40,12 @@ export default function App() {
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/my-posts" element={<ProtectedRoute><MyPosts /></ProtectedRoute>} />
+              <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+              <Route path="/order-confirm" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
               <Route path="/supplier/:id" element={<SupplierProfile />} />
               <Route path="/post/:postId" element={<PostDetail />} />
               <Route path="/chat/:supplierId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
               <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
-              <Route path="/order-confirm" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
               <Route path="/admin-sns-panel" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
