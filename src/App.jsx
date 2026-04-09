@@ -12,6 +12,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import Chats from './pages/Chats'
 import ProfilePage from './pages/ProfilePage'
 import HowItWorks from './pages/HowItWorks'
+import OrderConfirmation from './pages/OrderConfirmation'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/post/:postId" element={<PostDetail />} />
               <Route path="/chat/:supplierId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
               <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+              <Route path="/order-confirm" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
               <Route path="/admin-sns-panel" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

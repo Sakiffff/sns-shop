@@ -130,9 +130,10 @@ export default function CartSidebar() {
               {!user ? (
                 <Link to="/auth" onClick={() => setIsOpen(false)} className="btn-primary w-full justify-center py-3">Login to Order</Link>
               ) : (
-                <button className="btn-primary w-full justify-center py-3" onClick={() => setIsOpen(false)}>
-                  Proceed to Contact Suppliers
-                </button>
+                <Link to="/order-confirm" onClick={() => setIsOpen(false)}
+                  className="btn-primary w-full justify-center py-3">
+                  Confirm Order →
+                </Link>
               )}
               <button onClick={clearCart} className="w-full text-xs text-gray-300 hover:text-red-400 transition-colors mt-2 py-1">Clear cart</button>
             </div>

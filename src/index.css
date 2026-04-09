@@ -171,3 +171,25 @@
   font-bold w-4 h-4 rounded-full flex items-center justify-center;
   font-size: 10px;
 }
+
+/* ─── Mobile Responsive ─── */
+@media (max-width: 640px) {
+  .font-display { letter-spacing: -0.01em; }
+  
+  /* Cart sidebar full width on mobile */
+  .cart-sidebar-mobile {
+    max-width: 100vw !important;
+  }
+
+  /* Hero text smaller on mobile */
+  .hero-h1 { font-size: 2.8rem !important; line-height: 1 !important; }
+}
+
+/* Prevent body scroll when mobile menu open */
+.menu-open { overflow: hidden; }
+
+/* Touch-friendly tap targets */
+@media (hover: none) {
+  .btn-primary, .btn-secondary, .btn-ghost { min-height: 44px; }
+  button { min-height: 40px; }
+}

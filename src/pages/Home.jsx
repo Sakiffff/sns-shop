@@ -224,7 +224,7 @@ export default function Home() {
       </div>
 
       {/* Filter bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-[106px] z-30 shadow-sm">
+      <div className="bg-white border-b border-gray-100 sticky top-16 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto scrollbar-hide items-center">
           <button onClick={() => setVerifiedOnly(!verifiedOnly)}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border shrink-0 ${
