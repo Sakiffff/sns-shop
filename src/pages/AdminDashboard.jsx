@@ -82,6 +82,7 @@ export default function AdminDashboard() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [orders, setOrders] = useState([])
   const [orderFilter, setOrderFilter] = useState('all')
+  const [supplierPickupMap, setSupplierPickupMap] = useState({})
 
   function showSuccess(msg) {
     setActionSuccess(msg)
@@ -111,6 +112,11 @@ export default function AdminDashboard() {
       const allOrders = ordersSnap.docs.map(d => ({id:d.id,...d.data()}))
         .sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0))
       setOrders(allOrders)
+      // Load pickup info for all suppliers
+      const pickupSnap = await getDocs(collection(db,'supplierPickup'))
+      const pickupMap = {}
+      pickupSnap.docs.forEach(d => { pickupMap[d.id] = d.data() })
+      setSupplierPickupMap(pickupMap)
     } catch(e) { setActionError('Failed to load: ' + e.message) }
     setLoading(false)
   }
@@ -364,7 +370,8 @@ export default function AdminDashboard() {
             {label:'Suppliers', value:suppliers.length, icon:<Building size={18}/>},
             {label:'Verified', value:suppliers.filter(s=>s.isVerifiedSeller).length, icon:<ShieldCheck size={18} className="text-emerald-600"/>},
             {label:'Total Posts', value:posts.length, icon:<FileText size={18}/>},
-            {label:'Pending Orders', value:orders.filter(o=>o.status==='pending_payment').length, icon:<ShoppingBag size={18} className="text-orange-500"/>},
+            {label:'Pending Payment', value:orders.filter(o=>o.status==='pending_payment').length, icon:<ShoppingBag size={18} className="text-orange-500"/>},
+            {label:'Ready for Pickup', value:orders.filter(o=>o.status==='ready_for_pickup').length, icon:<Truck size={18} className="text-blue-500"/>},
             {label:'Pending Badges', value:pending.length, icon:<Users size={18} className="text-brand-600"/>},
           ].map(stat => (
             <div key={stat.label} className="card p-5">
@@ -400,6 +407,7 @@ export default function AdminDashboard() {
                 {v:'all', l:'All Orders'},
                 {v:'pending_payment', l:'Pending Verification'},
                 {v:'payment_confirmed', l:'Confirmed'},
+                {v:'ready_for_pickup', l:'Ready for Pickup'},
                 {v:'in_delivery', l:'In Delivery'},
                 {v:'shipped', l:'Shipped'},
               ].map(f => (
@@ -422,6 +430,7 @@ export default function AdminDashboard() {
                           <span className={`text-xs px-2 py-0.5 rounded-full font-bold font-body ${
                             order.status==='pending_payment' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
                             order.status==='payment_confirmed' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                            order.status==='ready_for_pickup' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
                             order.status==='in_delivery' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
                             order.status==='shipped' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
                             'bg-gray-100 text-gray-600 border border-gray-200'
@@ -449,6 +458,25 @@ export default function AdminDashboard() {
                       {order.notes && <div className="text-xs text-amber-700 font-body mt-1">Notes: {order.notes}</div>}
                     </div>
 
+                    {/* Pickup info for suppliers in this order */}
+                    {(order.suppliers||[]).map(sup => {
+                      const pickup = supplierPickupMap[sup.id]
+                      if (!pickup) return null
+                      return (
+                        <div key={sup.id} className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
+                          <div className="text-xs font-black text-blue-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                            📦 Pickup Info — {sup.name}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                            <div><span className="text-xs text-blue-400 font-body">Contact:</span> <strong className="text-blue-900">{pickup.name}</strong></div>
+                            <div><span className="text-xs text-blue-400 font-body">Phone:</span> <strong className="text-blue-900">{pickup.phone}</strong></div>
+                            <div className="sm:col-span-2"><span className="text-xs text-blue-400 font-body">Address:</span> <strong className="text-blue-900">{pickup.address}{pickup.city ? ', ' + pickup.city : ''}</strong></div>
+                            {pickup.notes && <div className="sm:col-span-2"><span className="text-xs text-blue-400 font-body">Notes:</span> <span className="text-blue-800 font-body">{pickup.notes}</span></div>}
+                          </div>
+                        </div>
+                      )
+                    })}
+
                     {/* Items */}
                     <div className="space-y-1.5 mb-4">
                       {(order.items||[]).map((item,i) => (
@@ -475,10 +503,15 @@ export default function AdminDashboard() {
                         </button>
                       )}
                       {order.status === 'payment_confirmed' && (
+                        <div className="text-xs text-gray-400 font-body px-3 py-2 bg-gray-50 rounded-xl border border-gray-200">
+                          ⏳ Waiting for supplier to mark as ready
+                        </div>
+                      )}
+                      {order.status === 'ready_for_pickup' && (
                         <button onClick={() => updateOrderStatus(order.id, 'in_delivery', 'In Delivery Queue')}
                           disabled={actionLoading===order.id}
-                          className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 font-bold disabled:opacity-50 transition-colors">
-                          {actionLoading===order.id ? '...' : <><Truck size={12}/> Move to Delivery</>}
+                          className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600 font-bold disabled:opacity-50 transition-colors">
+                          {actionLoading===order.id ? '...' : <><Truck size={12}/> Pickup Done — Move to Delivery</>}
                         </button>
                       )}
                       {order.status === 'in_delivery' && (

@@ -21,9 +21,16 @@ const STATUS_CONFIG = {
     color: 'bg-blue-50 border-blue-200 text-blue-700',
     dot: 'bg-blue-400',
   },
+  ready_for_pickup: {
+    label: 'Ready for Pickup',
+    sublabel: 'Supplier has prepared your order — awaiting collection',
+    icon: <Truck size={16} className="text-orange-500"/>,
+    color: 'bg-orange-50 border-orange-200 text-orange-700',
+    dot: 'bg-orange-400',
+  },
   in_delivery: {
-    label: 'In Delivery Queue',
-    sublabel: 'Your order is being prepared for shipment',
+    label: 'In Delivery',
+    sublabel: 'Your order has been collected and is on its way',
     icon: <Truck size={16} className="text-purple-500"/>,
     color: 'bg-purple-50 border-purple-200 text-purple-700',
     dot: 'bg-purple-400',

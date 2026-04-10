@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import Navbar from '../components/Navbar'
-import { Plus, Edit2, Trash2, Save, X, Info, Package, AlertCircle, Eye, Star, ShieldCheck, Image, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Edit2, Trash2, Save, X, Info, Package, AlertCircle, Eye, Star, ShieldCheck, ChevronDown, ChevronUp, Bell, Clock, CheckCircle, Truck, MapPin, Phone, User } from 'lucide-react'
 
 const CATEGORIES = ['T-Shirts','Denim','Hoodies','Polo Shirts','Activewear','Outerwear','Dresses','Knitwear','Accessories','Socks','Underwear','Swimwear','Uniforms','Other']
 const COMMON_SIZES = ['XS','S','M','L','XL','XXL','XXXL','Free Size','Custom']
@@ -136,6 +136,13 @@ export default function MyPosts() {
   const [isVerifiedSeller, setIsVerifiedSeller] = useState(false)
   const [pendingBadge, setPendingBadge] = useState(false)
   const [showBadgeModal, setShowBadgeModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('posts') // 'posts' | 'orders' | 'pickup'
+  const [supplierOrders, setSupplierOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [pickupInfo, setPickupInfo] = useState({ name: '', address: '', phone: '', city: '', notes: '' })
+  const [pickupSaving, setPickupSaving] = useState(false)
+  const [pickupSaved, setPickupSaved] = useState(false)
+  const [markingReady, setMarkingReady] = useState(null)
   const [transactionId, setTransactionId] = useState('')
   const [badgeSubmitted, setBadgeSubmitted] = useState(false)
   const [submittingBadge, setSubmittingBadge] = useState(false)
@@ -160,8 +167,56 @@ export default function MyPosts() {
       const vm = {}
       viewsQ.docs.forEach(d => { const {postId} = d.data(); vm[postId] = (vm[postId]||0)+1 })
       setPostViews(vm)
+      // Load pickup info
+      const pickupSnap = await getDoc(doc(db, 'supplierPickup', user.uid))
+      if (pickupSnap.exists()) setPickupInfo(p => ({ ...p, ...pickupSnap.data() }))
     } catch(e) { console.error(e) }
     setLoading(false)
+  }
+
+  // Real-time orders for this supplier
+  useEffect(() => {
+    if (!user || !isSupplier) return
+    setOrdersLoading(true)
+    const q = query(collection(db, 'orders'), where('suppliers', 'array-contains-key-UNUSED', ''))
+    // We query all orders and filter by supplierId on client
+    const unsub = onSnapshot(collection(db, 'orders'), snap => {
+      const mine = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(o => (o.suppliers || []).some(s => s.id === user.uid))
+        .sort((a, b) => new Date(b.createdAt||0) - new Date(a.createdAt||0))
+      setSupplierOrders(mine)
+      setOrdersLoading(false)
+    })
+    return unsub
+  }, [user, isSupplier])
+
+  async function savePickupInfo() {
+    setPickupSaving(true)
+    try {
+      await setDoc(doc(db, 'supplierPickup', user.uid), {
+        ...pickupInfo,
+        supplierId: user.uid,
+        supplierName: userProfile?.displayName || '',
+        updatedAt: new Date().toISOString(),
+      }, { merge: true })
+      setPickupSaved(true)
+      setTimeout(() => setPickupSaved(false), 3000)
+    } catch(e) { alert('Save failed: ' + e.message) }
+    setPickupSaving(false)
+  }
+
+  async function markOrderReady(orderId) {
+    setMarkingReady(orderId)
+    try {
+      await setDoc(doc(db, 'orders', orderId), {
+        status: 'ready_for_pickup',
+        statusLabel: 'Ready for Pickup',
+        supplierReadyAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true })
+    } catch(e) { alert('Failed: ' + e.message) }
+    setMarkingReady(null)
   }
 
   async function setupSupplier() {
@@ -287,6 +342,162 @@ export default function MyPosts() {
           </div>
           {!showForm && <button onClick={()=>{setShowForm(true);setEditingPost(null);setForm(EMPTY_POST)}} className="btn-primary"><Plus size={16}/> New Post</button>}
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200 pb-0">
+          {[
+            { key: 'posts', label: 'My Posts', icon: <Package size={14}/> },
+            {
+              key: 'orders',
+              label: `Orders${supplierOrders.filter(o=>['pending_payment','payment_confirmed'].includes(o.status)).length > 0 ? ` (${supplierOrders.filter(o=>['pending_payment','payment_confirmed'].includes(o.status)).length})` : ''}`,
+              icon: <Bell size={14}/>,
+              badge: supplierOrders.filter(o => o.status === 'payment_confirmed').length > 0
+            },
+            { key: 'pickup', label: 'Pickup Info', icon: <MapPin size={14}/> },
+          ].map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold font-body border-b-2 transition-all -mb-px ${
+                activeTab === tab.key
+                  ? 'border-brand-600 text-brand-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-700'
+              }`}>
+              {tab.icon} {tab.label}
+              {tab.badge && <span className="w-2 h-2 rounded-full bg-green-500 shrink-0"/>}
+            </button>
+          ))}
+        </div>
+
+        {/* ── ORDERS TAB ── */}
+        {activeTab === 'orders' && (
+          <div className="mb-6">
+            {ordersLoading ? (
+              <div className="text-center py-12 text-gray-400 font-body">Loading orders...</div>
+            ) : supplierOrders.length === 0 ? (
+              <div className="text-center py-16 card p-8">
+                <Bell size={40} className="text-gray-200 mx-auto mb-3"/>
+                <p className="font-display text-xl font-black text-gray-600 uppercase mb-1">No Orders Yet</p>
+                <p className="text-gray-400 text-sm font-body">When buyers order your products, they'll appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {supplierOrders.map(order => {
+                  const myItems = (order.items||[]).filter(i => i.supplierId === user.uid)
+                  const statusConfig = {
+                    pending_payment: { label: 'Payment Verification Pending', color: 'bg-yellow-50 border-yellow-200 text-yellow-700', icon: <Clock size={14} className="text-yellow-500"/> },
+                    payment_confirmed: { label: 'Payment Confirmed — Prepare Order', color: 'bg-green-50 border-green-300 text-green-700', icon: <CheckCircle size={14} className="text-green-500"/> },
+                    ready_for_pickup: { label: 'Ready for Pickup — Awaiting Collection', color: 'bg-blue-50 border-blue-200 text-blue-700', icon: <Truck size={14} className="text-blue-500"/> },
+                    in_delivery: { label: 'In Delivery', color: 'bg-purple-50 border-purple-200 text-purple-700', icon: <Truck size={14} className="text-purple-500"/> },
+                    shipped: { label: 'Shipped', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: <CheckCircle size={14} className="text-emerald-500"/> },
+                    delivered: { label: 'Delivered', color: 'bg-gray-50 border-gray-200 text-gray-500', icon: <CheckCircle size={14} className="text-gray-400"/> },
+                  }
+                  const sc = statusConfig[order.status] || statusConfig.pending_payment
+                  return (
+                    <div key={order.id} className={`card p-5 border-l-4 ${order.status === 'payment_confirmed' ? 'border-l-green-400' : order.status === 'pending_payment' ? 'border-l-yellow-400' : 'border-l-gray-200'}`}>
+                      {/* Status badge */}
+                      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold font-body mb-3 ${sc.color}`}>
+                        {sc.icon} {sc.label}
+                      </div>
+
+                      {/* Order info */}
+                      <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+                        <div>
+                          <div className="font-display font-black text-gray-900 uppercase text-sm">
+                            Order #{order.id.slice(0,8).toUpperCase()}
+                          </div>
+                          <div className="text-xs text-gray-400 font-body">
+                            Buyer: <strong>{order.buyerName}</strong> · {order.buyerCountry}
+                          </div>
+                          <div className="text-xs text-gray-300 font-body">
+                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-display font-black text-lg text-gray-900">
+                            {order.currencySymbol}{(order.totalAmount||0).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-400 font-body">{order.currency}</div>
+                        </div>
+                      </div>
+
+                      {/* My items in this order */}
+                      <div className="space-y-1.5 mb-3">
+                        {myItems.map((item,i) => (
+                          <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                            {item.itemImage && <img src={item.itemImage} className="w-8 h-8 rounded-lg object-cover shrink-0" alt="" onError={e=>e.target.style.display='none'}/>}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-gray-800 text-sm truncate">{item.itemName}</div>
+                              <div className="text-xs text-gray-400 font-body">
+                                Qty {item.qty}{item.size ? ` · ${item.size}` : ''}{item.color ? ` · ${item.color}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* CTA — only show "Mark Ready" when payment is confirmed */}
+                      {order.status === 'payment_confirmed' && (
+                        <button
+                          onClick={() => markOrderReady(order.id)}
+                          disabled={markingReady === order.id}
+                          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl text-sm transition-colors disabled:opacity-50">
+                          {markingReady === order.id ? 'Marking...' : <><CheckCircle size={16}/> Order Ready — Mark for Pickup</>}
+                        </button>
+                      )}
+                      {order.status === 'ready_for_pickup' && (
+                        <div className="w-full flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 text-blue-600 font-bold py-2.5 rounded-xl text-sm">
+                          <Truck size={15}/> Waiting for pickup agent
+                        </div>
+                      )}
+                      {order.status === 'pending_payment' && (
+                        <div className="w-full flex items-center justify-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-600 font-bold py-2.5 rounded-xl text-xs font-body">
+                          <Clock size={13}/> Waiting for S&S Shop to verify buyer's payment
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── PICKUP INFO TAB ── */}
+        {activeTab === 'pickup' && (
+          <div className="card p-6 mb-6">
+            <h2 className="font-display text-xl font-black text-gray-900 uppercase mb-1">Pickup Information</h2>
+            <p className="text-gray-400 text-sm font-body mb-5">
+              This info is shared with our delivery agency when they come to collect your orders. Keep it accurate.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="label flex items-center gap-1.5"><User size={13}/> Contact Name *</label>
+                <input className="input" value={pickupInfo.name} onChange={e=>setPickupInfo({...pickupInfo,name:e.target.value})} placeholder="Person to contact at pickup"/>
+              </div>
+              <div>
+                <label className="label flex items-center gap-1.5"><Phone size={13}/> Phone Number *</label>
+                <input className="input" value={pickupInfo.phone} onChange={e=>setPickupInfo({...pickupInfo,phone:e.target.value})} placeholder="+880 1700 000000"/>
+              </div>
+              <div>
+                <label className="label flex items-center gap-1.5"><MapPin size={13}/> Full Address *</label>
+                <textarea className="input resize-none" rows={2} value={pickupInfo.address} onChange={e=>setPickupInfo({...pickupInfo,address:e.target.value})} placeholder="House/floor, road, area"/>
+              </div>
+              <div>
+                <label className="label">City</label>
+                <input className="input" value={pickupInfo.city} onChange={e=>setPickupInfo({...pickupInfo,city:e.target.value})} placeholder="e.g. Dhaka, Chittagong"/>
+              </div>
+              <div>
+                <label className="label">Notes for pickup agent</label>
+                <input className="input" value={pickupInfo.notes} onChange={e=>setPickupInfo({...pickupInfo,notes:e.target.value})} placeholder="e.g. 3rd floor, ring bell, available 9am-5pm"/>
+              </div>
+              <button onClick={savePickupInfo} disabled={pickupSaving} className="btn-primary">
+                <Save size={15}/> {pickupSaving ? 'Saving...' : pickupSaved ? '✓ Saved!' : 'Save Pickup Info'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'posts' && (
+        <>
 
         {/* Verified badge banner */}
         {!isVerifiedSeller && !pendingBadge && (
@@ -470,6 +681,9 @@ export default function MyPosts() {
           </div>
         )}
       </div>
+
+      </>
+      )}
 
       {/* Badge modal */}
       {showBadgeModal && (
