@@ -680,8 +680,6 @@ export default function MyPosts() {
             ))}
           </div>
         )}
-      </div>
-
       </>
       )}
 
