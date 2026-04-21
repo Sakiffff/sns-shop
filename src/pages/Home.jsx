@@ -196,8 +196,10 @@ export default function Home() {
             </p>
             <div className="flex gap-3 max-w-2xl">
               <div className="relative flex-1">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input className="input pl-11 h-12 shadow-lg text-base"
+                <div className="search-pill flex items-center px-5 h-12 gap-3">
+                  <Search size={16} className="text-gray-400 shrink-0" />
+                  <input className="flex-1 min-w-0 bg-transparent border-none outline-none text-gray-900 placeholder-gray-400 text-sm font-body"
+                    style={{letterSpacing:'-0.01em'}}
                   placeholder="Search products, categories, suppliers..."
                   value={search} onChange={e => setSearch(e.target.value)} />
               </div>

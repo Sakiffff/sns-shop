@@ -56,7 +56,7 @@ export default function Navbar({ searchValue, onSearchChange }) {
 
   return (
     <>
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
+      <nav className={`sticky top-0 z-40 border-b transition-all duration-300 ${scrolled ? "border-gray-200" : "border-transparent"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-2">
 
           {/* Logo */}
@@ -110,13 +110,16 @@ export default function Navbar({ searchValue, onSearchChange }) {
           {/* Search — slides in on scroll (desktop) */}
           {onSearchChange && (
             <div className={`relative flex-1 max-w-xs sm:max-w-sm transition-all duration-300 ${scrolled ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none w-0'}`}>
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 font-body bg-gray-50"
-                placeholder="Search..."
-                value={searchValue || ''}
-                onChange={e => onSearchChange(e.target.value)}
-              />
+              <div className="search-pill flex items-center px-4 py-2 gap-2">
+                <Search size={13} className="text-gray-400 shrink-0" />
+                <input
+                  className="flex-1 min-w-0 text-sm bg-transparent border-none outline-none font-body text-gray-800 placeholder-gray-400"
+                  style={{letterSpacing:'-0.01em'}}
+                  placeholder="Search products..."
+                  value={searchValue || ''}
+                  onChange={e => onSearchChange(e.target.value)}
+                />
+              </div>
             </div>
           )}
 
