@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { useCountry } from '../contexts/CountryContext'
 import { LogOut, MessageCircle, ShieldCheck, FileText, ShoppingBag, User, ChevronDown, Globe, Search, Menu, X as XIcon } from 'lucide-react'
-import CartSidebar from './CartSidebar'
 import Logo from './Logo'
 import { useEffect, useState, useRef } from 'react'
 
@@ -264,7 +263,6 @@ export default function Navbar({ searchValue, onSearchChange }) {
         )}
       </nav>
 
-      <CartSidebar />
     </>
   )
 }

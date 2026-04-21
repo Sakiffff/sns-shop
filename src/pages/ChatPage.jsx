@@ -65,10 +65,22 @@ export default function ChatPage() {
   }
 
   async function translateText(txt) {
+    if (!txt || txt.trim().length < 2) return txt
     try {
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=auto|en`)
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: `Translate this text to English. Reply with ONLY the translated text, nothing else: "${txt}"`
+          }]
+        })
+      })
       const data = await res.json()
-      return data.responseData?.translatedText || txt
+      return data.content?.[0]?.text?.trim() || txt
     } catch { return txt }
   }
 

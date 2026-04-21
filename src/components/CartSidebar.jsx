@@ -1,6 +1,6 @@
 import { useCart } from '../contexts/CartContext'
 import { useCountry } from '../contexts/CountryContext'
-import { X, ShoppingBag, Trash2, Plus, Minus, MessageCircle, AlertCircle } from 'lucide-react'
+import { X, ShoppingBag, Trash2, Plus, Minus, MessageCircle, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { convertFromBDT, convertFromBDTRaw, getCurrencyForCountry } from '../utils/currency'
@@ -12,9 +12,6 @@ export default function CartSidebar() {
   const curr = getCurrencyForCountry(country)
   const { total, symbol } = getTotalInCountry(country)
 
-  if (!isOpen) return null
-
-  // Group by supplier for display
   const bySupplier = {}
   items.forEach(i => {
     if (!bySupplier[i.supplierId]) bySupplier[i.supplierId] = { name: i.supplierName, id: i.supplierId, items: [] }
@@ -23,49 +20,65 @@ export default function CartSidebar() {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsOpen(false)} />
-      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col">
+      <div
+        className={`fixed inset-0 z-40 transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        style={{ background: isOpen ? 'rgba(0,0,0,0.2)' : 'transparent', backdropFilter: isOpen ? 'blur(6px)' : 'none', WebkitBackdropFilter: isOpen ? 'blur(6px)' : 'none' }}
+        onClick={() => setIsOpen(false)}
+      />
+      <div
+        className={`fixed right-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ width: '400px', maxWidth: '100vw', background: 'rgba(252,252,252,0.95)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderLeft: '1px solid rgba(0,0,0,0.08)', boxShadow: '-24px 0 80px rgba(0,0,0,0.12)' }}>
 
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <ShoppingBag size={20} className="text-brand-600" />
-            <span className="font-display text-xl font-black text-gray-900 uppercase tracking-wide">Order Cart</span>
-            {items.length > 0 && (
-              <span className="bg-brand-600 text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center">{items.length}</span>
-            )}
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-brand-600 flex items-center justify-center shadow-sm">
+              <ShoppingBag size={16} className="text-white" />
+            </div>
+            <div>
+              <div className="font-display font-bold text-gray-900 text-sm leading-tight" style={{ letterSpacing: '-0.02em' }}>Order Cart</div>
+              <div className="text-xs text-gray-400 font-body">
+                {items.length === 0 ? 'Nothing added yet' : `${items.reduce((s,i)=>s+i.qty,0)} item${items.reduce((s,i)=>s+i.qty,0)!==1?'s':''} · ${curr.code}`}
+              </div>
+            </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors">
-            <X size={20} />
+          <button onClick={() => setIsOpen(false)}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 transition-all"
+            style={{ background: 'rgba(0,0,0,0.05)' }}>
+            <X size={16} />
           </button>
         </div>
 
-        <div className="px-4 pt-3">
-          <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-500 font-body flex items-center gap-2">
-            🌍 Prices in <strong>{curr.code}</strong> · {country}
+        {/* Currency row */}
+        <div className="px-5 pt-3 pb-1">
+          <div className="flex items-center gap-2 text-xs font-body text-gray-500">
+            <span className="text-base">🌍</span>
+            Showing prices in <strong className="text-gray-700 font-semibold">{curr.code}</strong>
+            <span className="text-gray-300">·</span>
+            <span>{country}</span>
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-            <ShoppingBag size={52} className="text-gray-100 mb-4" />
-            <p className="font-display text-xl font-black text-gray-700 uppercase mb-1">Cart is empty</p>
-            <p className="text-gray-400 text-sm font-body">Select items from product listings</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
+              style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <ShoppingBag size={32} className="text-gray-200" />
+            </div>
+            <p className="font-display font-bold text-gray-800 text-lg mb-1.5" style={{ letterSpacing: '-0.02em' }}>Your cart is empty</p>
+            <p className="text-gray-400 text-sm font-body leading-relaxed">Browse products and select items to add them here</p>
+            <button onClick={() => setIsOpen(false)} className="mt-5 btn-primary text-sm">Browse Products</button>
           </div>
         ) : (
           <>
-            <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex gap-2 items-start">
-              <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 font-body">Prices converted from BDT. Confirm final pricing with supplier via chat.</p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
               {Object.values(bySupplier).map(sup => (
                 <div key={sup.id}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase font-body">{sup.name}</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest font-body">{sup.name}</span>
                     {user && (
                       <Link to={`/chat/${sup.id}`} onClick={() => setIsOpen(false)}
-                        className="text-xs text-brand-600 font-bold hover:text-brand-800 flex items-center gap-1 font-body">
+                        className="flex items-center gap-1 text-xs text-brand-600 font-bold hover:text-brand-800 font-body">
                         <MessageCircle size={11} /> Chat
                       </Link>
                     )}
@@ -76,39 +89,43 @@ export default function CartSidebar() {
                       const lineTotal = convertFromBDTRaw(bdtPrice * cartItem.qty, country)
                       const unitPrice = convertFromBDT(bdtPrice, country)
                       return (
-                        <div key={cartItem.key} className="card p-3">
-                          <div className="flex gap-3 mb-2">
-                            {cartItem.item.imageUrl
-                              ? <img src={cartItem.item.imageUrl} className="w-12 h-12 rounded-lg object-cover shrink-0" alt="" onError={e => e.target.style.display='none'} />
-                              : <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xl shrink-0">📦</div>
-                            }
-                            <div className="flex-1 min-w-0">
-                              <div className="font-display font-black text-gray-900 text-xs uppercase leading-tight truncate">{cartItem.item.name}</div>
-                              <div className="text-xs text-gray-400 font-body truncate">{cartItem.postTitle}</div>
-                              {(cartItem.size || cartItem.color) && (
-                                <div className="flex gap-2 mt-0.5">
-                                  {cartItem.size && <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-body">{cartItem.size}</span>}
-                                  {cartItem.color && <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-body">{cartItem.color}</span>}
-                                </div>
-                              )}
-                              <div className="text-xs text-brand-600 font-bold font-body mt-0.5">{unitPrice}/pc</div>
-                            </div>
-                            <button onClick={() => removeItem(cartItem.key)} className="text-gray-200 hover:text-red-400 transition-colors shrink-0">
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-                              <button onClick={() => updateQty(cartItem.key, cartItem.qty - 1)} className="px-2 py-1 hover:bg-gray-50 text-gray-500 transition-colors">
-                                <Minus size={12} />
-                              </button>
-                              <span className="text-sm font-black px-2 text-gray-900">{cartItem.qty}</span>
-                              <button onClick={() => updateQty(cartItem.key, cartItem.qty + 1)} className="px-2 py-1 hover:bg-gray-50 text-gray-500 transition-colors">
-                                <Plus size={12} />
-                              </button>
-                            </div>
-                            <div className="font-display font-black text-gray-900">
-                              {curr.symbol}{lineTotal >= 1 ? lineTotal.toFixed(2) : lineTotal.toFixed(4)}
+                        <div key={cartItem.key} className="rounded-2xl p-3 flex gap-3 group"
+                          style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                          {cartItem.item.imageUrl
+                            ? <img src={cartItem.item.imageUrl} className="w-14 h-14 rounded-xl object-cover shrink-0" alt="" onError={e=>e.target.style.display='none'} />
+                            : <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-2xl shrink-0">📦</div>
+                          }
+                          <div className="flex-1 min-w-0">
+                            <div className="font-display font-bold text-gray-900 text-xs leading-snug truncate" style={{ letterSpacing: '-0.01em' }}>{cartItem.item.name}</div>
+                            <div className="text-xs text-gray-400 font-body truncate mt-0.5">{cartItem.postTitle}</div>
+                            {(cartItem.size || cartItem.color) && (
+                              <div className="flex gap-1.5 mt-1">
+                                {cartItem.size && <span className="text-xs px-2 py-0.5 rounded-full font-body font-medium text-gray-500" style={{ background: 'rgba(0,0,0,0.05)' }}>{cartItem.size}</span>}
+                                {cartItem.color && <span className="text-xs px-2 py-0.5 rounded-full font-body font-medium text-gray-500" style={{ background: 'rgba(0,0,0,0.05)' }}>{cartItem.color}</span>}
+                              </div>
+                            )}
+                            <div className="text-xs text-brand-600 font-semibold font-body mt-1">{unitPrice}/pc</div>
+                            <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                                <button onClick={() => updateQty(cartItem.key, cartItem.qty - 1)}
+                                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-black/5 transition-colors">
+                                  <Minus size={11} />
+                                </button>
+                                <span className="text-sm font-bold px-2 text-gray-900 w-8 text-center font-body">{cartItem.qty}</span>
+                                <button onClick={() => updateQty(cartItem.key, cartItem.qty + 1)}
+                                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-black/5 transition-colors">
+                                  <Plus size={11} />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-display font-bold text-gray-900 text-sm" style={{ letterSpacing: '-0.02em' }}>
+                                  {curr.symbol}{lineTotal >= 1 ? lineTotal.toFixed(2) : lineTotal.toFixed(4)}
+                                </span>
+                                <button onClick={() => removeItem(cartItem.key)}
+                                  className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100">
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -119,23 +136,31 @@ export default function CartSidebar() {
               ))}
             </div>
 
-            <div className="px-4 py-4 border-t border-gray-100 bg-white">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-gray-500 font-body text-sm">Estimated Total ({curr.code})</span>
-                <span className="font-display font-black text-2xl text-gray-900">
-                  {symbol}{total >= 1 ? total.toFixed(2) : total.toFixed(4)}
-                </span>
+            {/* Footer */}
+            <div className="px-5 pb-6 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <div className="flex items-baseline justify-between mb-4">
+                <span className="text-sm text-gray-500 font-body">Estimated Total</span>
+                <div>
+                  <span className="font-display font-black text-2xl text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                    {symbol}{total >= 1 ? total.toFixed(2) : total.toFixed(4)}
+                  </span>
+                  <span className="text-xs text-gray-400 font-body ml-1">{curr.code}</span>
+                </div>
               </div>
-              <p className="text-xs text-gray-400 font-body mb-3 text-center">Chat each supplier to confirm order & shipping</p>
               {!user ? (
-                <Link to="/auth" onClick={() => setIsOpen(false)} className="btn-primary w-full justify-center py-3">Login to Order</Link>
+                <Link to="/auth" onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-display font-bold text-sm transition-all text-white"
+                  style={{ background: 'linear-gradient(135deg, #e51414, #c00d0d)', boxShadow: '0 4px 16px rgba(229,20,20,0.3)', letterSpacing: '-0.01em' }}>
+                  Login to Order
+                </Link>
               ) : (
                 <Link to="/order-confirm" onClick={() => setIsOpen(false)}
-                  className="btn-primary w-full justify-center py-3">
-                  Confirm Order →
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-display font-bold text-sm transition-all text-white"
+                  style={{ background: 'linear-gradient(135deg, #e51414, #c00d0d)', boxShadow: '0 4px 16px rgba(229,20,20,0.3)', letterSpacing: '-0.01em' }}>
+                  Confirm Order <ChevronRight size={15} />
                 </Link>
               )}
-              <button onClick={clearCart} className="w-full text-xs text-gray-300 hover:text-red-400 transition-colors mt-2 py-1">Clear cart</button>
+              <button onClick={clearCart} className="w-full text-xs text-gray-300 hover:text-red-400 transition-colors mt-2 py-1 font-body">Clear cart</button>
             </div>
           </>
         )}

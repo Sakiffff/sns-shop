@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import Navbar from '../components/Navbar'
 import { Link } from 'react-router-dom'
-import { Package, Clock, CheckCircle, Truck, ShoppingBag, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Package, Clock, CheckCircle, Truck, ShoppingBag, MessageCircle, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 
 const STATUS_CONFIG = {
   pending_payment: {
@@ -51,7 +51,7 @@ const STATUS_CONFIG = {
   },
 }
 
-function OrderCard({ order }) {
+function OrderCard({ order, onDelete, deleting }) {
   const [expanded, setExpanded] = useState(false)
   const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending_payment
   const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
@@ -192,6 +192,20 @@ export default function MyOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const [deletingId, setDeletingId] = useState(null)
+
+  async function deleteOrder(orderId) {
+    if (!confirm('Remove this order from your history?')) return
+    setDeletingId(orderId)
+    try {
+      await deleteDoc(doc(db, 'orders', orderId))
+      // onSnapshot will update the list automatically
+    } catch(e) {
+      alert('Failed to delete: ' + e.message)
+    }
+    setDeletingId(null)
+  }
+
   useEffect(() => {
     const q = query(collection(db, 'orders'), where('buyerId', '==', user.uid))
     const unsub = onSnapshot(q, snap => {
@@ -221,7 +235,7 @@ export default function MyOrders() {
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map(order => <OrderCard key={order.id} order={order}/>)}
+            {orders.map(order => <OrderCard key={order.id} order={order} onDelete={deleteOrder} deleting={deletingId}/>)}
           </div>
         )}
       </div>

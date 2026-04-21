@@ -14,6 +14,8 @@ import ProfilePage from './pages/ProfilePage'
 import HowItWorks from './pages/HowItWorks'
 import OrderConfirmation from './pages/OrderConfirmation'
 import MyOrders from './pages/MyOrders'
+import CartSidebar from './components/CartSidebar'
+import FloatingChats from './components/FloatingChats'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -34,6 +36,8 @@ export default function App() {
       <AuthProvider>
         <CountryProvider>
           <CartProvider>
+            <CartSidebar />
+            <FloatingChats />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
