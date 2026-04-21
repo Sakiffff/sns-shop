@@ -56,10 +56,6 @@ export default function Navbar({ searchValue, onSearchChange }) {
 
   return (
     <>
-      <div className="disclaimer-bar">
-        ⚠️ Payments & logistics handled directly between buyers and suppliers.
-      </div>
-
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-2">
 
