@@ -202,6 +202,7 @@ export default function Home() {
                     style={{letterSpacing:'-0.01em'}}
                   placeholder="Search products, categories, suppliers..."
                   value={search} onChange={e => setSearch(e.target.value)} />
+                </div>
               </div>
               {!user && (
                 <Link to="/auth?mode=signup" className="btn-white h-12 px-6 font-bold whitespace-nowrap">
