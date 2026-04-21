@@ -19,133 +19,6 @@ function StarRating({ rating, count }) {
         <Star key={s} size={10} className={s <= Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'} />
       ))}
       {count > 0 && <span className="text-xs text-gray-400 font-body ml-0.5">({count})</span>}
-
-      {/* ── FOOTER ── */}
-      <footer className="bg-gray-900 text-white mt-16">
-
-        {/* Trust bar */}
-        <div className="border-b border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { icon: '🛡️', title: 'Verified Suppliers', desc: 'Every seller is screened' },
-                { icon: '💸', title: 'Secure Payments', desc: 'Via Remitly — money protected' },
-                { icon: '🌍', title: 'Ships Worldwide', desc: 'From Bangladesh to your door' },
-                { icon: '💬', title: '24/7 Chat Support', desc: 'Direct with suppliers' },
-              ].map(item => (
-                <div key={item.title} className="flex items-start gap-3">
-                  <span className="text-2xl shrink-0">{item.icon}</span>
-                  <div>
-                    <div className="font-display font-black text-white uppercase text-sm">{item.title}</div>
-                    <div className="text-gray-400 text-xs font-body mt-0.5">{item.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Main footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-
-            {/* Brand */}
-            <div className="lg:col-span-1">
-              <div className="font-display font-black text-2xl text-white uppercase tracking-tight mb-2">S&S Shop</div>
-              <p className="text-gray-400 text-sm font-body leading-relaxed mb-4">
-                The easiest way to source premium garments directly from Bangladesh. No middlemen. Real prices. Verified suppliers.
-              </p>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs font-body">
-                <span className="text-lg">🇧🇩</span> Based in Bangladesh
-              </div>
-            </div>
-
-            {/* Quick links */}
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Platform</h4>
-              <ul className="space-y-2.5">
-                {[
-                  { label: 'Browse Products', href: '/' },
-                  { label: 'How It Works', href: '/how-it-works' },
-                  { label: 'Become a Supplier', href: '/my-posts' },
-                  { label: 'Verified Sellers', href: '/?verified=true' },
-                ].map(link => (
-                  <li key={link.label}>
-                    <a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* For buyers */}
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">For Buyers</h4>
-              <ul className="space-y-2.5">
-                {[
-                  { label: 'My Orders', href: '/my-orders' },
-                  { label: 'Chat with Suppliers', href: '/chats' },
-                  { label: 'Payment Guide', href: '/how-it-works' },
-                  { label: 'Refund Policy', href: '/how-it-works' },
-                ].map(link => (
-                  <li key={link.label}>
-                    <a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Contact</h4>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">📧</span>
-                  <a href="mailto:hello@snsshop.com" className="hover:text-white transition-colors">hello@snsshop.com</a>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">📍</span>
-                  <span>Dhaka, Bangladesh</span>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">🌐</span>
-                  <a href="https://snsshop.com" className="hover:text-white transition-colors">snsshop.com</a>
-                </li>
-              </ul>
-
-              {/* Social */}
-              <div className="mt-5">
-                <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 font-body">Follow Us</h5>
-                <div className="flex gap-2">
-                  {[
-                    { name: 'Instagram', icon: '📸', href: 'https://instagram.com/snsshop' },
-                    { name: 'TikTok', icon: '🎵', href: 'https://tiktok.com/@snsshop' },
-                    { name: 'LinkedIn', icon: '💼', href: 'https://linkedin.com/company/snsshop' },
-                  ].map(s => (
-                    <a key={s.name} href={s.href} target="_blank" rel="noreferrer"
-                      className="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-base transition-colors" title={s.name}>
-                      {s.icon}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-            <p className="text-gray-500 text-xs font-body">© {new Date().getFullYear()} S&S Shop. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-600 text-xs font-body">Payments via</span>
-              <span className="text-gray-400 text-xs font-bold font-body">Remitly</span>
-              <span className="text-gray-600 text-xs font-body">·</span>
-              <span className="text-gray-400 text-xs font-bold font-body">bKash</span>
-            </div>
-          </div>
-        </div>
-
-      </footer>
     </div>
   )
 }
@@ -240,133 +113,6 @@ function PostCard({ post, supplier }) {
           </div>
         </div>
       </div>
-
-      {/* ── FOOTER ── */}
-      <footer className="bg-gray-900 text-white mt-16">
-
-        {/* Trust bar */}
-        <div className="border-b border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { icon: '🛡️', title: 'Verified Suppliers', desc: 'Every seller is screened' },
-                { icon: '💸', title: 'Secure Payments', desc: 'Via Remitly — money protected' },
-                { icon: '🌍', title: 'Ships Worldwide', desc: 'From Bangladesh to your door' },
-                { icon: '💬', title: '24/7 Chat Support', desc: 'Direct with suppliers' },
-              ].map(item => (
-                <div key={item.title} className="flex items-start gap-3">
-                  <span className="text-2xl shrink-0">{item.icon}</span>
-                  <div>
-                    <div className="font-display font-black text-white uppercase text-sm">{item.title}</div>
-                    <div className="text-gray-400 text-xs font-body mt-0.5">{item.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Main footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-
-            {/* Brand */}
-            <div className="lg:col-span-1">
-              <div className="font-display font-black text-2xl text-white uppercase tracking-tight mb-2">S&S Shop</div>
-              <p className="text-gray-400 text-sm font-body leading-relaxed mb-4">
-                The easiest way to source premium garments directly from Bangladesh. No middlemen. Real prices. Verified suppliers.
-              </p>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs font-body">
-                <span className="text-lg">🇧🇩</span> Based in Bangladesh
-              </div>
-            </div>
-
-            {/* Quick links */}
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Platform</h4>
-              <ul className="space-y-2.5">
-                {[
-                  { label: 'Browse Products', href: '/' },
-                  { label: 'How It Works', href: '/how-it-works' },
-                  { label: 'Become a Supplier', href: '/my-posts' },
-                  { label: 'Verified Sellers', href: '/?verified=true' },
-                ].map(link => (
-                  <li key={link.label}>
-                    <a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* For buyers */}
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">For Buyers</h4>
-              <ul className="space-y-2.5">
-                {[
-                  { label: 'My Orders', href: '/my-orders' },
-                  { label: 'Chat with Suppliers', href: '/chats' },
-                  { label: 'Payment Guide', href: '/how-it-works' },
-                  { label: 'Refund Policy', href: '/how-it-works' },
-                ].map(link => (
-                  <li key={link.label}>
-                    <a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Contact</h4>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">📧</span>
-                  <a href="mailto:hello@snsshop.com" className="hover:text-white transition-colors">hello@snsshop.com</a>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">📍</span>
-                  <span>Dhaka, Bangladesh</span>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">🌐</span>
-                  <a href="https://snsshop.com" className="hover:text-white transition-colors">snsshop.com</a>
-                </li>
-              </ul>
-
-              {/* Social */}
-              <div className="mt-5">
-                <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 font-body">Follow Us</h5>
-                <div className="flex gap-2">
-                  {[
-                    { name: 'Instagram', icon: '📸', href: 'https://instagram.com/snsshop' },
-                    { name: 'TikTok', icon: '🎵', href: 'https://tiktok.com/@snsshop' },
-                    { name: 'LinkedIn', icon: '💼', href: 'https://linkedin.com/company/snsshop' },
-                  ].map(s => (
-                    <a key={s.name} href={s.href} target="_blank" rel="noreferrer"
-                      className="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-base transition-colors" title={s.name}>
-                      {s.icon}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-            <p className="text-gray-500 text-xs font-body">© {new Date().getFullYear()} S&S Shop. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-600 text-xs font-body">Payments via</span>
-              <span className="text-gray-400 text-xs font-bold font-body">Remitly</span>
-              <span className="text-gray-600 text-xs font-body">·</span>
-              <span className="text-gray-400 text-xs font-bold font-body">bKash</span>
-            </div>
-          </div>
-        </div>
-
-      </footer>
     </div>
   )
 }
@@ -570,8 +316,6 @@ export default function Home() {
 
       {/* ── FOOTER ── */}
       <footer className="bg-gray-900 text-white mt-16">
-
-        {/* Trust bar */}
         <div className="border-b border-gray-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -592,98 +336,50 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Main footer */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-
-            {/* Brand */}
             <div className="lg:col-span-1">
-              <div className="font-display font-black text-2xl text-white uppercase tracking-tight mb-2">S&S Shop</div>
-              <p className="text-gray-400 text-sm font-body leading-relaxed mb-4">
-                The easiest way to source premium garments directly from Bangladesh. No middlemen. Real prices. Verified suppliers.
-              </p>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs font-body">
-                <span className="text-lg">🇧🇩</span> Based in Bangladesh
-              </div>
+              <div className="font-display font-black text-2xl text-white uppercase tracking-tight mb-2">S&amp;S Shop</div>
+              <p className="text-gray-400 text-sm font-body leading-relaxed mb-4">The easiest way to source premium garments directly from Bangladesh. No middlemen. Real prices. Verified suppliers.</p>
+              <div className="flex items-center gap-1.5 text-gray-500 text-xs font-body"><span className="text-lg">🇧🇩</span> Based in Bangladesh</div>
             </div>
-
-            {/* Quick links */}
             <div>
               <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Platform</h4>
               <ul className="space-y-2.5">
-                {[
-                  { label: 'Browse Products', href: '/' },
-                  { label: 'How It Works', href: '/how-it-works' },
-                  { label: 'Become a Supplier', href: '/my-posts' },
-                  { label: 'Verified Sellers', href: '/?verified=true' },
-                ].map(link => (
-                  <li key={link.label}>
-                    <a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a>
-                  </li>
+                {[{label:'Browse Products',href:'/'},{label:'How It Works',href:'/how-it-works'},{label:'Become a Supplier',href:'/my-posts'},{label:'Verified Sellers',href:'/?verified=true'}].map(link=>(
+                  <li key={link.label}><a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a></li>
                 ))}
               </ul>
             </div>
-
-            {/* For buyers */}
             <div>
               <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">For Buyers</h4>
               <ul className="space-y-2.5">
-                {[
-                  { label: 'My Orders', href: '/my-orders' },
-                  { label: 'Chat with Suppliers', href: '/chats' },
-                  { label: 'Payment Guide', href: '/how-it-works' },
-                  { label: 'Refund Policy', href: '/how-it-works' },
-                ].map(link => (
-                  <li key={link.label}>
-                    <a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a>
-                  </li>
+                {[{label:'My Orders',href:'/my-orders'},{label:'Chat with Suppliers',href:'/chats'},{label:'Payment Guide',href:'/how-it-works'},{label:'Refund Policy',href:'/how-it-works'}].map(link=>(
+                  <li key={link.label}><a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a></li>
                 ))}
               </ul>
             </div>
-
-            {/* Contact */}
             <div>
               <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Contact</h4>
               <ul className="space-y-3">
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">📧</span>
-                  <a href="mailto:hello@snsshop.com" className="hover:text-white transition-colors">hello@snsshop.com</a>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">📍</span>
-                  <span>Dhaka, Bangladesh</span>
-                </li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body">
-                  <span className="text-base shrink-0 mt-0.5">🌐</span>
-                  <a href="https://snsshop.com" className="hover:text-white transition-colors">snsshop.com</a>
-                </li>
+                <li className="flex items-start gap-2 text-gray-400 text-sm font-body"><span className="text-base shrink-0 mt-0.5">📧</span><a href="mailto:hello@snsshop.com" className="hover:text-white transition-colors">hello@snsshop.com</a></li>
+                <li className="flex items-start gap-2 text-gray-400 text-sm font-body"><span className="text-base shrink-0 mt-0.5">📍</span><span>Dhaka, Bangladesh</span></li>
+                <li className="flex items-start gap-2 text-gray-400 text-sm font-body"><span className="text-base shrink-0 mt-0.5">🌐</span><a href="https://snsshop.com" className="hover:text-white transition-colors">snsshop.com</a></li>
               </ul>
-
-              {/* Social */}
               <div className="mt-5">
                 <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 font-body">Follow Us</h5>
                 <div className="flex gap-2">
-                  {[
-                    { name: 'Instagram', icon: '📸', href: 'https://instagram.com/snsshop' },
-                    { name: 'TikTok', icon: '🎵', href: 'https://tiktok.com/@snsshop' },
-                    { name: 'LinkedIn', icon: '💼', href: 'https://linkedin.com/company/snsshop' },
-                  ].map(s => (
-                    <a key={s.name} href={s.href} target="_blank" rel="noreferrer"
-                      className="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-base transition-colors" title={s.name}>
-                      {s.icon}
-                    </a>
+                  {[{name:'Instagram',icon:'📸',href:'https://instagram.com/snsshop'},{name:'TikTok',icon:'🎵',href:'https://tiktok.com/@snsshop'},{name:'LinkedIn',icon:'💼',href:'https://linkedin.com/company/snsshop'}].map(s=>(
+                    <a key={s.name} href={s.href} target="_blank" rel="noreferrer" className="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-base transition-colors" title={s.name}>{s.icon}</a>
                   ))}
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Bottom bar */}
         <div className="border-t border-gray-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-            <p className="text-gray-500 text-xs font-body">© {new Date().getFullYear()} S&S Shop. All rights reserved.</p>
+            <p className="text-gray-500 text-xs font-body">© {new Date().getFullYear()} S&amp;S Shop. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <span className="text-gray-600 text-xs font-body">Payments via</span>
               <span className="text-gray-400 text-xs font-bold font-body">Remitly</span>
@@ -692,7 +388,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
       </footer>
     </div>
   )
