@@ -458,6 +458,22 @@ export default function AdminDashboard() {
                       {order.notes && <div className="text-xs text-amber-700 font-body mt-1">Notes: {order.notes}</div>}
                     </div>
 
+                    {/* Delivery address — where to ship TO */}
+                    {order.deliveryAddress && (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-3">
+                        <div className="text-xs font-black text-emerald-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                          🚚 Ship To (Buyer's Delivery Address)
+                        </div>
+                        <div className="text-sm text-emerald-900 font-body space-y-0.5">
+                          <div><strong>{order.deliveryAddress.fullName}</strong> · {order.deliveryAddress.phone}</div>
+                          <div>{order.deliveryAddress.addressLine1}{order.deliveryAddress.addressLine2 ? ', '+order.deliveryAddress.addressLine2 : ''}</div>
+                          <div>{order.deliveryAddress.city}{order.deliveryAddress.stateProvince ? ', '+order.deliveryAddress.stateProvince : ''} {order.deliveryAddress.postalCode}</div>
+                          <div className="font-bold">{order.deliveryAddress.country}</div>
+                          {order.deliveryAddress.specialInstructions && <div className="text-emerald-700 text-xs mt-1 italic">{order.deliveryAddress.specialInstructions}</div>}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Pickup info for suppliers in this order */}
                     {(order.suppliers||[]).map(sup => {
                       const pickup = supplierPickupMap[sup.id]
@@ -529,11 +545,21 @@ export default function AdminDashboard() {
                         </button>
                       )}
                       <button onClick={async () => {
-                        if(!confirm('Delete this order?')) return
-                        await deleteDoc(doc(db,'orders',order.id))
-                        setOrders(o => o.filter(x => x.id !== order.id))
-                      }} className="text-xs px-3 py-2 rounded-xl text-red-500 border border-red-200 hover:bg-red-50 font-body">
-                        Delete
+                        if(!confirm('Delete this order permanently?')) return
+                        setActionLoading(order.id)
+                        try {
+                          await deleteDoc(doc(db,'orders',order.id))
+                          setOrders(o => o.filter(x => x.id !== order.id))
+                          // orders state updated above
+                          showSuccess('Order deleted.')
+                        } catch(e) {
+                          console.error('delete order error:', e)
+                          setActionError('Delete failed: ' + e.message)
+                        }
+                        setActionLoading(null)
+                      }} disabled={actionLoading===order.id}
+                      className="text-xs px-3 py-2 rounded-xl text-red-500 border border-red-200 hover:bg-red-50 font-body disabled:opacity-50 transition-colors">
+                        {actionLoading===order.id ? '...' : 'Delete'}
                       </button>
                     </div>
                   </div>

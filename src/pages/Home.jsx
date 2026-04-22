@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, getDocs } from 'firebase/firestore'
+import { collection, getDocs , where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
@@ -125,6 +125,7 @@ export default function Home() {
   const [category, setCategory] = useState('All')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [deliveredCount, setDeliveredCount] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
   const [moqMax, setMoqMax] = useState('')
   const [priceMax, setPriceMax] = useState('')
@@ -152,8 +153,13 @@ export default function Home() {
           })
         setPosts(postsData)
         setFiltered(postsData)
-      } catch (e) { console.error(e) }
-      setLoading(false)
+      // Fetch delivered orders count for social proof stats
+      try {
+        const deliveredSnap = await getDocs(query(collection(db, 'orders'), where('status', '==', 'delivered')))
+        setDeliveredCount(deliveredSnap.size)
+      } catch(e) { /* non-critical */ }
+    } catch (e) { console.error(e) }
+    setLoading(false)
     }
     fetchData()
   }, [])
@@ -189,20 +195,17 @@ export default function Home() {
               🇧🇩 Bangladesh's #1 Garment B2B Platform
             </div>
             <h1 className="font-display text-5xl sm:text-7xl font-black text-white mb-4 uppercase leading-none tracking-tight">
-              EASIEST WAY TO SOURCE<br /><span className="text-red-200">GARMENTS FROM BANGLADESH.</span>
+              SOURCE GARMENTS<br /><span className="text-red-200">DIRECTLY.</span>
             </h1>
             <p className="text-red-100 text-lg mb-8 font-body max-w-xl">
               Browse products from verified Bangladeshi suppliers. Real prices. No middlemen.
             </p>
             <div className="flex gap-3 max-w-2xl">
               <div className="relative flex-1">
-                <div className="search-pill flex items-center px-5 h-12 gap-3">
-                  <Search size={16} className="text-gray-400 shrink-0" />
-                  <input className="flex-1 min-w-0 bg-transparent border-none outline-none text-gray-900 placeholder-gray-400 text-sm font-body"
-                    style={{letterSpacing:'-0.01em'}}
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input className="input pl-11 h-12 shadow-lg text-base"
                   placeholder="Search products, categories, suppliers..."
                   value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
               </div>
               {!user && (
                 <Link to="/auth?mode=signup" className="btn-white h-12 px-6 font-bold whitespace-nowrap">
@@ -214,7 +217,8 @@ export default function Home() {
           <div className="flex gap-8 mt-10 pt-8 border-t border-white/20">
             {[
               { num: posts.length || '0', label: 'Products listed' },
-              { num: Object.keys(suppliers).length || '0', label: 'Active suppliers' },
+              { num: Object.keys(suppliers).length || '0', label: 'Verified suppliers' },
+              { num: deliveredCount > 0 ? deliveredCount + '+' : 'Growing', label: 'Orders delivered worldwide' },
               { num: 'Free', label: 'To join & browse' },
             ].map(s => (
               <div key={s.label}>
@@ -316,82 +320,6 @@ export default function Home() {
           </div>
         )}
       </div>
-
-      {/* ── FOOTER ── */}
-      <footer className="bg-gray-900 text-white mt-16">
-        <div className="border-b border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { icon: '🛡️', title: 'Verified Suppliers', desc: 'Every seller is screened' },
-                { icon: '💸', title: 'Secure Payments', desc: 'Via Remitly — money protected' },
-                { icon: '🌍', title: 'Ships Worldwide', desc: 'From Bangladesh to your door' },
-                { icon: '💬', title: '24/7 Chat Support', desc: 'Direct with suppliers' },
-              ].map(item => (
-                <div key={item.title} className="flex items-start gap-3">
-                  <span className="text-2xl shrink-0">{item.icon}</span>
-                  <div>
-                    <div className="font-display font-black text-white uppercase text-sm">{item.title}</div>
-                    <div className="text-gray-400 text-xs font-body mt-0.5">{item.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            <div className="lg:col-span-1">
-              <div className="font-display font-black text-2xl text-white uppercase tracking-tight mb-2">S&amp;S Shop</div>
-              <p className="text-gray-400 text-sm font-body leading-relaxed mb-4">The easiest way to source premium garments directly from Bangladesh. No middlemen. Real prices. Verified suppliers.</p>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs font-body"><span className="text-lg">🇧🇩</span> Based in Bangladesh</div>
-            </div>
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Platform</h4>
-              <ul className="space-y-2.5">
-                {[{label:'Browse Products',href:'/'},{label:'How It Works',href:'/how-it-works'},{label:'Become a Supplier',href:'/my-posts'},{label:'Verified Sellers',href:'/?verified=true'}].map(link=>(
-                  <li key={link.label}><a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">For Buyers</h4>
-              <ul className="space-y-2.5">
-                {[{label:'My Orders',href:'/my-orders'},{label:'Chat with Suppliers',href:'/chats'},{label:'Payment Guide',href:'/how-it-works'},{label:'Refund Policy',href:'/how-it-works'}].map(link=>(
-                  <li key={link.label}><a href={link.href} className="text-gray-400 hover:text-white text-sm font-body transition-colors">{link.label}</a></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-display font-black text-white uppercase text-sm tracking-widest mb-4">Contact</h4>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body"><span className="text-base shrink-0 mt-0.5">📧</span><a href="mailto:hello@snsshop.com" className="hover:text-white transition-colors">hello@snsshop.com</a></li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body"><span className="text-base shrink-0 mt-0.5">📍</span><span>Dhaka, Bangladesh</span></li>
-                <li className="flex items-start gap-2 text-gray-400 text-sm font-body"><span className="text-base shrink-0 mt-0.5">🌐</span><a href="https://snsshop.com" className="hover:text-white transition-colors">snsshop.com</a></li>
-              </ul>
-              <div className="mt-5">
-                <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 font-body">Follow Us</h5>
-                <div className="flex gap-2">
-                  {[{name:'Instagram',icon:'📸',href:'https://instagram.com/snsshop'},{name:'TikTok',icon:'🎵',href:'https://tiktok.com/@snsshop'},{name:'LinkedIn',icon:'💼',href:'https://linkedin.com/company/snsshop'}].map(s=>(
-                    <a key={s.name} href={s.href} target="_blank" rel="noreferrer" className="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-base transition-colors" title={s.name}>{s.icon}</a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-            <p className="text-gray-500 text-xs font-body">© {new Date().getFullYear()} S&amp;S Shop. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-600 text-xs font-body">Payments via</span>
-              <span className="text-gray-400 text-xs font-bold font-body">Remitly</span>
-              <span className="text-gray-600 text-xs font-body">·</span>
-              <span className="text-gray-400 text-xs font-bold font-body">bKash</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

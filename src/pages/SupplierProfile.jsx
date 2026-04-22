@@ -26,6 +26,7 @@ export default function SupplierProfile() {
   const [supplier, setSupplier] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deliveredOrders, setDeliveredOrders] = useState(0)
   const { user } = useAuth()
   const { addToCart, items } = useCart()
   const { country } = useCountry()
@@ -40,6 +41,18 @@ export default function SupplierProfile() {
         if (supSnap.exists()) setSupplier({ id: supSnap.id, ...supSnap.data() })
         setPosts(postsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
+        // Count delivered orders for this supplier
+        try {
+          const ordersSnap = await getDocs(query(
+            collection(db, 'orders'),
+            where('status', '==', 'delivered')
+          ))
+          // Filter orders that include this supplier
+          const count = ordersSnap.docs.filter(d =>
+            (d.data().suppliers || []).some(s => s.id === id)
+          ).length
+          setDeliveredOrders(count)
+        } catch(e) {}
       } catch(e) { console.error(e) }
       setLoading(false)
     }
@@ -78,7 +91,12 @@ export default function SupplierProfile() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="font-display text-3xl font-black text-gray-900 uppercase tracking-tight">
+                {deliveredOrders > 0 && (
+          <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3 font-body">
+            ✅ {deliveredOrders} order{deliveredOrders !== 1 ? 's' : ''} successfully fulfilled
+          </div>
+        )}
+        <h1 className="font-display text-3xl font-black text-gray-900 uppercase tracking-tight">
                   {supplier.companyName}
                 </h1>
                 {isVerified && (
