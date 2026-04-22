@@ -12,6 +12,9 @@ const EMPTY_POST = {
   bannerUrl:'',bannerUrl2:'',bannerUrl3:'',
   tags:'',sampleAvailable:false,samplePrice:'',productionTime:'',availableColors:'',
   sizesEnabled:false,availableSizes:[],items:[],
+  cardPrice:'',        // price shown on the browse card
+  priceMode:'show',    // 'show' = display price | 'contact' = "Contact for price"
+  whatsapp:'',         // mandatory
 }
 const EMPTY_ITEM = {id:'',name:'',imageUrl:'',price:'',description:''}
 
@@ -107,6 +110,7 @@ export default function MyPosts() {
   const [submittingBadge, setSubmittingBadge] = useState(false)
   const [badgeError, setBadgeError] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [whatsapp, setWhatsapp] = useState('')
   const [supplierOrders, setSupplierOrders] = useState([])
   const [markingReady, setMarkingReady] = useState(null)
   const [pickupInfo, setPickupInfo] = useState({name:'',address:'',phone:'',city:'',notes:''})
@@ -122,7 +126,7 @@ export default function MyPosts() {
       const snap = await getDocs(q)
       setPosts(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)))
       const supSnap = await getDoc(doc(db,'suppliers',user.uid))
-      if (supSnap.exists()) { const sd=supSnap.data(); setIsVerifiedSeller(sd.isVerifiedSeller||false); setPendingBadge(sd.verifiedBadgePending||false) }
+      if (supSnap.exists()) { const sd=supSnap.data(); setIsVerifiedSeller(sd.isVerifiedSeller||false); setPendingBadge(sd.verifiedBadgePending||false); setWhatsapp(sd.whatsapp||'') }
       const viewsQ = await getDocs(query(collection(db,'postViews'), where('supplierId','==',user.uid)))
       const vm={}; viewsQ.docs.forEach(d=>{const {postId}=d.data(); vm[postId]=(vm[postId]||0)+1}); setPostViews(vm)
       const pickupSnap = await getDoc(doc(db,'supplierPickup',user.uid))
@@ -172,6 +176,7 @@ export default function MyPosts() {
 
   async function handleSave() {
     if (!form.title.trim()||!form.moq) { setSaveError('Title and MOQ are required'); return }
+    if (!whatsapp.trim()) { setSaveError('WhatsApp number is required — buyers need to reach you'); return }
     setSaving(true); setSaveError('')
     try {
       const postData = {
@@ -185,6 +190,10 @@ export default function MyPosts() {
         availableColors:form.availableColors?form.availableColors.split(',').map(s=>s.trim()).filter(Boolean):[],
         items:form.items||[], currency:'BDT',
         supplierId:user.uid, supplierName:userProfile?.displayName||'',
+        cardPrice:form.cardPrice ? parseFloat(form.cardPrice)||0 : 0,
+        priceMode:form.priceMode||'show',
+        price:form.cardPrice ? parseFloat(form.cardPrice)||0 : 0, // legacy compat for Home card
+        whatsapp:whatsapp.trim(),
         updatedAt:new Date().toISOString(),
       }
       if (editingPost) {
@@ -192,8 +201,9 @@ export default function MyPosts() {
         setPosts(p=>p.map(x=>x.id===editingPost.id?{...x,...postData}:x))
       } else {
         postData.createdAt=new Date().toISOString()
-        const ref=await addDoc(collection(db,'posts'),postData)
-        setPosts(p=>[{id:ref.id,...postData},...p])
+        await setDoc(doc(db,'suppliers',user.uid), { whatsapp: whatsapp.trim() }, { merge: true })
+      const ref=await addDoc(collection(db,'posts'),postData)
+      setPosts(p=>[{id:ref.id,...postData},...p])
       }
       setShowForm(false); setEditingPost(null); setForm(EMPTY_POST)
     } catch(e) { setSaveError('Save failed: '+e.message) }
@@ -224,6 +234,8 @@ export default function MyPosts() {
       availableColors:Array.isArray(post.availableColors)?post.availableColors.join(', '):(post.availableColors||''),
       availableSizes:post.availableSizes||[], sizesEnabled:post.sizesEnabled||false, items:post.items||[],
       bannerUrl:post.bannerUrl||post.imageUrl||'', bannerUrl2:post.bannerUrl2||'', bannerUrl3:post.bannerUrl3||'',
+      cardPrice:String(post.cardPrice||''), priceMode:post.priceMode||'show',
+      whatsapp:post.whatsapp||'',
     })
     setEditingPost(post); setShowForm(true); window.scrollTo({top:0,behavior:'smooth'})
   }
@@ -433,7 +445,44 @@ export default function MyPosts() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Banner Images</h3>
+                    {/* WhatsApp — mandatory */}
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <label className="label flex items-center gap-2 text-green-800">
+                      📲 Your WhatsApp Number *
+                      <span className="text-xs font-normal text-green-600">Buyers contact you here</span>
+                    </label>
+                    <input className="input font-mono" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)}
+                      placeholder="+880 1700 000000 (include country code)"/>
+                    {!whatsapp.trim() && <p className="text-xs text-red-500 font-body mt-1">⚠ Required before publishing</p>}
+                  </div>
+
+                  {/* Card price display */}
+                  <div className="border border-gray-200 rounded-xl p-4">
+                    <label className="label mb-3">Price shown on browse card</label>
+                    <div className="flex gap-3 mb-3">
+                      {[{v:'show', l:'Show a price', d:'Buyers see your price directly'}, {v:'contact', l:'Contact for price', d:'Card says "Contact for price"'}].map(opt => (
+                        <label key={opt.v} className={`flex-1 flex items-start gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${form.priceMode===opt.v ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                          <input type="radio" name="priceMode" value={opt.v} checked={form.priceMode===opt.v} onChange={()=>setForm({...form,priceMode:opt.v})} className="accent-brand-600 mt-0.5 shrink-0"/>
+                          <div>
+                            <div className="text-sm font-bold text-gray-800 font-body">{opt.l}</div>
+                            <div className="text-xs text-gray-400 font-body">{opt.d}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                    {form.priceMode === 'show' && (
+                      <div>
+                        <label className="label text-xs">Starting price (৳ BDT)</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">৳</span>
+                          <input className="input pl-7" type="number" min="0" value={form.cardPrice} onChange={e=>setForm({...form,cardPrice:e.target.value})} placeholder="e.g. 250 — shown as starting price on card"/>
+                        </div>
+                        <p className="text-xs text-gray-400 font-body mt-1">Shown as "from ৳X/pc" on the browse card</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Banner Images</h3>
                     <p className="text-xs text-gray-400 font-body mb-3">Shown on product card and top of post page</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[{key:'bannerUrl',label:'Banner 1 (Main)'},{key:'bannerUrl2',label:'Banner 2'},{key:'bannerUrl3',label:'Banner 3'}].map(f=>(

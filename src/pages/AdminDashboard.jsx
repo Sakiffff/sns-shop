@@ -233,6 +233,15 @@ export default function AdminDashboard() {
         updatedAt: new Date().toISOString(),
       }, { merge: true })
       setOrders(o => o.map(x => x.id===orderId ? {...x, status:newStatus, statusLabel} : x))
+      // When delivered: update public stats counter so Home page shows live count
+      if (newStatus === 'delivered') {
+        try {
+          const statsRef = doc(db, 'siteStats', 'public')
+          const statsSnap = await getDoc(statsRef)
+          const current = statsSnap.exists() ? (statsSnap.data().deliveredOrders || 0) : 0
+          await setDoc(statsRef, { deliveredOrders: current + 1, updatedAt: new Date().toISOString() }, { merge: true })
+        } catch(e) { /* non-critical */ }
+      }
       showSuccess('Order status updated!')
     } catch(e) { setActionError('Update failed: '+e.message) }
     setActionLoading(null)
@@ -309,6 +318,25 @@ export default function AdminDashboard() {
     setActionLoading(null)
   }
 
+  async function handleDeleteOrder(orderId) {
+    if (!window.confirm('Delete this order permanently? This cannot be undone.')) return
+    setActionLoading(orderId)
+    setActionError('')
+    try {
+      await deleteDoc(doc(db, 'orders', orderId))
+      setOrders(prev => prev.filter(x => x.id !== orderId))
+      showSuccess('Order deleted.')
+    } catch(e) {
+      console.error('handleDeleteOrder error:', e)
+      if (e.code === 'permission-denied') {
+        setActionError('Permission denied. Update Firestore rules: match /orders/{id} { allow delete: if request.auth != null; }')
+      } else {
+        setActionError('Delete failed: ' + e.message)
+      }
+    }
+    setActionLoading(null)
+  }
+
   async function deleteSupplier(supplierId) {
     if (!confirm('Delete this supplier profile? This cannot be undone.')) return
     setActionLoading(supplierId)
@@ -365,13 +393,14 @@ export default function AdminDashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           {[
             {label:'Suppliers', value:suppliers.length, icon:<Building size={18}/>},
             {label:'Verified', value:suppliers.filter(s=>s.isVerifiedSeller).length, icon:<ShieldCheck size={18} className="text-emerald-600"/>},
             {label:'Total Posts', value:posts.length, icon:<FileText size={18}/>},
             {label:'Pending Payment', value:orders.filter(o=>o.status==='pending_payment').length, icon:<ShoppingBag size={18} className="text-orange-500"/>},
             {label:'Ready for Pickup', value:orders.filter(o=>o.status==='ready_for_pickup').length, icon:<Truck size={18} className="text-blue-500"/>},
+            {label:'Successfully Delivered', value:orders.filter(o=>o.status==='delivered').length, icon:<CheckCircle size={18} className="text-emerald-600"/>},
             {label:'Pending Badges', value:pending.length, icon:<Users size={18} className="text-brand-600"/>},
           ].map(stat => (
             <div key={stat.label} className="card p-5">
@@ -544,22 +573,10 @@ export default function AdminDashboard() {
                           {actionLoading===order.id ? '...' : <><Check size={12}/> Mark Delivered</>}
                         </button>
                       )}
-                      <button onClick={async () => {
-                        if(!confirm('Delete this order permanently?')) return
-                        setActionLoading(order.id)
-                        try {
-                          await deleteDoc(doc(db,'orders',order.id))
-                          setOrders(o => o.filter(x => x.id !== order.id))
-                          // orders state updated above
-                          showSuccess('Order deleted.')
-                        } catch(e) {
-                          console.error('delete order error:', e)
-                          setActionError('Delete failed: ' + e.message)
-                        }
-                        setActionLoading(null)
-                      }} disabled={actionLoading===order.id}
-                      className="text-xs px-3 py-2 rounded-xl text-red-500 border border-red-200 hover:bg-red-50 font-body disabled:opacity-50 transition-colors">
-                        {actionLoading===order.id ? '...' : 'Delete'}
+                      <button onClick={() => handleDeleteOrder(order.id)}
+                        disabled={actionLoading===order.id}
+                        className="text-xs px-3 py-2 rounded-xl text-red-500 border border-red-200 hover:bg-red-50 font-body disabled:opacity-50 transition-colors">
+                        {actionLoading===order.id ? 'Deleting...' : 'Delete'}
                       </button>
                     </div>
                   </div>

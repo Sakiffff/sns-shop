@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, getDocs , where } from 'firebase/firestore'
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
@@ -30,7 +30,9 @@ function PostCard({ post, supplier }) {
   const navigate = useNavigate()
   const inCart = items.some(i => i.post.id === post.id)
   const isVerified = supplier?.isVerifiedSeller
-  const localPrice = convertFromBDT(parseFloat(post.price) || 0, country)
+  const isContactMode = post.priceMode === 'contact'
+  const displayPrice = post.cardPrice || post.price || 0
+  const localPrice = convertFromBDT(parseFloat(displayPrice) || 0, country)
 
   return (
     <div className="card-hover overflow-hidden flex flex-col group cursor-pointer"
@@ -56,13 +58,22 @@ function PostCard({ post, supplier }) {
             </span>
           </div>
         )}
-        <button
-          onClick={e => { e.stopPropagation(); addToCart(post) }}
-          className={`absolute bottom-2 right-2 text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg transition-all z-10
-            ${inCart ? 'bg-green-500 text-white' : 'bg-white text-brand-600 hover:bg-brand-600 hover:text-white'}`}
-        >
-          {inCart ? '✓' : '+ Add'}
-        </button>
+        {isContactMode ? (
+          <a href={`https://wa.me/${(post.whatsapp||'').replace(/\D/g,'')}?text=${encodeURIComponent('Hi, I found your listing "'+post.title+'" on S&S Shop and I am interested!')}`}
+            target="_blank" rel="noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="absolute bottom-2 right-2 text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg bg-green-500 text-white hover:bg-green-600 transition-all z-10">
+            WhatsApp
+          </a>
+        ) : (
+          <button
+            onClick={e => { e.stopPropagation(); addToCart(post) }}
+            className={`absolute bottom-2 right-2 text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg transition-all z-10
+              ${inCart ? 'bg-green-500 text-white' : 'bg-white text-brand-600 hover:bg-brand-600 hover:text-white'}`}
+          >
+            {inCart ? '✓' : '+ Add'}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -75,10 +86,16 @@ function PostCard({ post, supplier }) {
         </h3>
         <div className="mb-2"><StarRating rating={post.avgRating} count={post.ratingCount || 0} /></div>
         <div className="flex items-baseline gap-1 mb-1">
-          <span className="font-display font-black text-brand-600 text-xl">{localPrice}</span>
-          <span className="text-xs text-gray-400 font-body">/pc</span>
+          {isContactMode ? (
+            <span className="font-display font-bold text-gray-500 text-sm">Contact for price</span>
+          ) : (
+            <>
+              <span className="font-display font-black text-brand-600 text-xl">{localPrice}</span>
+              <span className="text-xs text-gray-400 font-body">/pc</span>
+            </>
+          )}
         </div>
-        <div className="text-xs text-gray-200 font-body mb-2">৳{parseFloat(post.price || 0).toLocaleString()} BDT</div>
+        {!isContactMode && <div className="text-xs text-gray-200 font-body mb-2">৳{parseFloat(displayPrice || 0).toLocaleString()} BDT</div>}
         {post.moq && (
           <div className="flex items-center gap-1.5 mb-2">
             <Package size={11} className="text-gray-300" />
@@ -153,10 +170,12 @@ export default function Home() {
           })
         setPosts(postsData)
         setFiltered(postsData)
-      // Fetch delivered orders count for social proof stats
+      // Fetch public site stats (delivered count stored publicly)
       try {
-        const deliveredSnap = await getDocs(query(collection(db, 'orders'), where('status', '==', 'delivered')))
-        setDeliveredCount(deliveredSnap.size)
+        const statsSnap = await getDoc(doc(db, 'siteStats', 'public'))
+        if (statsSnap.exists()) {
+          setDeliveredCount(statsSnap.data().deliveredOrders || 0)
+        }
       } catch(e) { /* non-critical */ }
     } catch (e) { console.error(e) }
     setLoading(false)

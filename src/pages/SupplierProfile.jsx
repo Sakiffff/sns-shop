@@ -91,16 +91,16 @@ export default function SupplierProfile() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                {deliveredOrders > 0 && (
-          <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3 font-body">
-            ✅ {deliveredOrders} order{deliveredOrders !== 1 ? 's' : ''} successfully fulfilled
-          </div>
-        )}
-        <h1 className="font-display text-3xl font-black text-gray-900 uppercase tracking-tight">
+                <h1 className="font-display text-3xl font-black text-gray-900 uppercase tracking-tight">
                   {supplier.companyName}
                 </h1>
                 {isVerified && (
-<span className="verified-seller-badge"><ShieldCheck size={10}/> Verified Seller</span>
+                  <span className="verified-seller-badge"><ShieldCheck size={10}/> Verified Seller</span>
+                )}
+                {deliveredOrders > 0 && (
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full font-body">
+                    ✅ {deliveredOrders} order{deliveredOrders !== 1 ? 's' : ''} fulfilled
+                  </span>
                 )}
                 {isSnsVerified && (
                   <span className="inline-flex items-center gap-1 bg-brand-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
